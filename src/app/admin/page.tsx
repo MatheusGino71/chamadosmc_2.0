@@ -12,6 +12,9 @@ import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWe
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
 import TicketModal from '@/components/TicketModal';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { AdminSkeleton } from '@/components/LoadingSkeleton';
+import { toast } from 'sonner';
 
 // Função para calcular tempo em aberto
 const getTimeOpen = (createdAt: Date): string => {
@@ -42,10 +45,10 @@ export default function AdminPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
   // Estados de filtros
   const [filterSistema, setFilterSistema] = useState<string>('all');
@@ -92,7 +95,11 @@ export default function AdminPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
     await signOut();
     router.push('/login');
   };
@@ -126,12 +133,11 @@ export default function AdminPage() {
       
       await updateDoc(ticketRef, updateData);
       
-      // Mostra mensagem de sucesso
-      setSuccessMessage(`Chamado movido para "${columns.find(c => c.id === newStatus)?.title}" com sucesso!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Mostra mensagem de sucesso com toast
+      toast.success(`Chamado movido para "${columns.find(c => c.id === newStatus)?.title}" com sucesso!`);
     } catch (error) {
       console.error('Erro ao atualizar status do ticket:', error);
-      alert('Erro ao mover o chamado. Tente novamente.');
+      toast.error('Erro ao mover o chamado. Tente novamente.');
     }
   };
 
@@ -222,13 +228,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Notificação de Sucesso */}
-      {successMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
-          ✅ {successMessage}
-        </div>
-      )}
-
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -258,7 +257,8 @@ export default function AdminPage() {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-label="Sair da conta"
               >
                 <LogOut className="h-4 w-4" />
                 Sair
@@ -274,7 +274,9 @@ export default function AdminPage() {
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              aria-expanded={showFilters}
+              aria-controls="admin-filters"
             >
               <Filter className="h-4 w-4" />
               {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
@@ -282,7 +284,8 @@ export default function AdminPage() {
             {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim) && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                aria-label="Limpar todos os filtros"
               >
                 <X className="h-4 w-4" />
                 Limpar Filtros
@@ -291,14 +294,16 @@ export default function AdminPage() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div id="admin-filters" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg" role="region" aria-label="Filtros de chamados">
               {/* Filtro de Sistema */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Sistema</label>
+                <label htmlFor="filter-sistema" className="block text-xs font-medium text-gray-700 mb-1">Sistema</label>
                 <select
+                  id="filter-sistema"
                   value={filterSistema}
                   onChange={(e) => setFilterSistema(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por sistema"
                 >
                   <option value="all">Todos</option>
                   {sistemas.map((sistema) => (
@@ -309,11 +314,13 @@ export default function AdminPage() {
 
               {/* Filtro de Setor */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Setor</label>
+                <label htmlFor="filter-setor" className="block text-xs font-medium text-gray-700 mb-1">Setor</label>
                 <select
+                  id="filter-setor"
                   value={filterSetor}
                   onChange={(e) => setFilterSetor(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por setor"
                 >
                   <option value="all">Todos</option>
                   {setores.map((setor) => (
@@ -324,8 +331,9 @@ export default function AdminPage() {
 
               {/* Filtro de Período */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Período</label>
+                <label htmlFor="filter-periodo" className="block text-xs font-medium text-gray-700 mb-1">Período</label>
                 <select
+                  id="filter-periodo"
                   value={filterPeriodo}
                   onChange={(e) => {
                     setFilterPeriodo(e.target.value as any);
@@ -335,6 +343,7 @@ export default function AdminPage() {
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por período"
                 >
                   <option value="all">Todos</option>
                   <option value="today">Hoje</option>
@@ -345,8 +354,9 @@ export default function AdminPage() {
 
               {/* Filtro Data Início */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Data Início</label>
+                <label htmlFor="filter-data-inicio" className="block text-xs font-medium text-gray-700 mb-1">Data Início</label>
                 <input
+                  id="filter-data-inicio"
                   type="date"
                   value={filterDataInicio}
                   onChange={(e) => {
@@ -354,13 +364,15 @@ export default function AdminPage() {
                     setFilterPeriodo('all');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Data de início do filtro"
                 />
               </div>
 
               {/* Filtro Data Fim */}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Data Fim</label>
+                <label htmlFor="filter-data-fim" className="block text-xs font-medium text-gray-700 mb-1">Data Fim</label>
                 <input
+                  id="filter-data-fim"
                   type="date"
                   value={filterDataFim}
                   onChange={(e) => {
@@ -368,6 +380,7 @@ export default function AdminPage() {
                     setFilterPeriodo('all');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Data final do filtro"
                 />
               </div>
             </div>
@@ -375,42 +388,49 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-600 uppercase">Total</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-blue-200 p-4">
-            <p className="text-xs font-medium text-blue-600 uppercase">Abertos</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">{stats.abertos}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-4">
-            <p className="text-xs font-medium text-yellow-600 uppercase">Em Andamento</p>
-            <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.emAndamento}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-green-200 p-4">
-            <p className="text-xs font-medium text-green-600 uppercase">Resolvidos</p>
-            <p className="text-3xl font-bold text-green-600 mt-1">{stats.resolvidos}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-400 p-4">
-            <p className="text-xs font-medium text-gray-700 uppercase">Fechados</p>
-            <p className="text-3xl font-bold text-gray-700 mt-1">{stats.fechados}</p>
-          </div>
+      {/* Main Content */}
+      {loading ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <AdminSkeleton />
         </div>
-      </div>
-
-      {/* Kanban Board */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {loading || !mounted ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      ) : (
+        <>
+          {/* Stats */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4" role="region" aria-label="Estatísticas de chamados">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <p className="text-xs font-medium text-gray-600 uppercase">Total</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border border-blue-200 p-4">
+                <p className="text-xs font-medium text-blue-600 uppercase">Abertos</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">{stats.abertos}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-4">
+                <p className="text-xs font-medium text-yellow-600 uppercase">Em Andamento</p>
+                <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.emAndamento}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border border-green-200 p-4">
+                <p className="text-xs font-medium text-green-600 uppercase">Resolvidos</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{stats.resolvidos}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-400 p-4">
+                <p className="text-xs font-medium text-gray-700 uppercase">Fechados</p>
+                <p className="text-3xl font-bold text-gray-700 mt-1">{stats.fechados}</p>
+              </div>
+            </div>
           </div>
-        ) : (
-          <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              {columns.map((column) => (
+
+          {/* Kanban Board */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            {!mounted ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  {columns.map((column) => (
                 <div key={column.id} className="flex flex-col h-full">
                   <div className={`${column.headerColor} text-white rounded-t-lg px-4 py-3 shadow-md`}>
                     <h3 className="font-bold text-lg flex items-center gap-2">
@@ -531,11 +551,25 @@ export default function AdminPage() {
           </DragDropContext>
         )}
       </div>
+        </>
+      )}
 
       {/* Modal de Visualização e Chat */}
       {showModal && selectedTicket && (
         <TicketModal ticket={selectedTicket} onClose={handleCloseModal} />
       )}
+
+      {/* Diálogo de Confirmação de Logout */}
+      <ConfirmDialog
+        isOpen={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={confirmLogout}
+        title="Confirmar saída"
+        message="Tem certeza que deseja sair da sua conta de administrador?"
+        confirmText="Sim, sair"
+        cancelText="Cancelar"
+        variant="warning"
+      />
     </div>
   );
 }

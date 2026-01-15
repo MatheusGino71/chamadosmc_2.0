@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { collection, addDoc, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface TicketModalProps {
   ticket: Ticket;
@@ -80,14 +81,15 @@ export default function TicketModal({ ticket, onClose }: TicketModalProps) {
       });
 
       setNewMessage('');
+      toast.success('Mensagem enviada!');
     } catch (error: any) {
       console.error('Erro ao enviar mensagem:', error);
       
       // Verifica se é erro de permissão do Firestore
       if (error?.code === 'permission-denied') {
-        alert('⚠️ Erro de Permissão!\n\nVocê precisa configurar as regras do Firestore.\n\nAcesse o Firebase Console:\n1. Firestore Database > Rules\n2. Adicione as regras da coleção "messages"\n3. Confira o arquivo README.md para ver as regras completas');
+        toast.error('Erro de permissão. Verifique as regras do Firestore.');
       } else {
-        alert('Erro ao enviar mensagem: ' + (error?.message || 'Tente novamente.'));
+        toast.error('Erro ao enviar mensagem: ' + (error?.message || 'Tente novamente.'));
       }
     } finally {
       setSending(false);

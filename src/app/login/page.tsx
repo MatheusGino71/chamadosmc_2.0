@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogIn } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,17 +23,21 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
+      toast.success('Login realizado com sucesso!');
       // Não redireciona aqui - deixa o AuthContext fazer isso
       router.push('/');
     } catch (err: any) {
       console.error(err);
+      let errorMessage = '';
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Email ou senha incorretos');
+        errorMessage = 'Email ou senha incorretos';
       } else if (err.code === 'auth/too-many-requests') {
-        setError('Muitas tentativas. Tente novamente mais tarde');
+        errorMessage = 'Muitas tentativas. Tente novamente mais tarde';
       } else {
-        setError('Erro ao fazer login. Tente novamente');
+        errorMessage = 'Erro ao fazer login. Tente novamente';
       }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -106,6 +111,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={loading ? 'Entrando na conta' : 'Entrar na conta'}
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </button>

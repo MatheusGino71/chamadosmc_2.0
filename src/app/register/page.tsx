@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
 
 const setores = [
   'Financeiro',
@@ -36,12 +37,16 @@ export default function RegisterPage() {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('As senhas não coincidem');
+      const errorMsg = 'As senhas não coincidem';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres');
+      const errorMsg = 'A senha deve ter pelo menos 6 caracteres';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -54,17 +59,21 @@ export default function RegisterPage() {
         nome: formData.nome,
         setor: formData.setor,
       });
+      toast.success('Conta criada com sucesso! Bem-vindo!');
       // Redireciona para home que vai detectar o role
       router.push('/');
     } catch (err: any) {
       console.error(err);
+      let errorMessage = '';
       if (err.code === 'auth/email-already-in-use') {
-        setError('Este email já está em uso');
+        errorMessage = 'Este email já está em uso';
       } else if (err.code === 'auth/invalid-email') {
-        setError('Email inválido');
+        errorMessage = 'Email inválido';
       } else {
-        setError('Erro ao criar conta. Tente novamente');
+        errorMessage = 'Erro ao criar conta. Tente novamente';
       }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

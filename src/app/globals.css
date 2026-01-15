@@ -18,8 +18,57 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+/* Melhorias de Acessibilidade */
+*:focus-visible {
+  outline: 2px solid rgb(37, 99, 235);
+  outline-offset: 2px;
+}
+
+/* Remove outline padrão mas mantém para teclado */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Animação suave para transições */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Animação de fade in */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Skip to content para acessibilidade */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
+

@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { generateTicketId } from '@/lib/ticketId';
 import { ArrowLeft, Upload, X, Link as LinkIcon, Bug, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 const setores = [
   'Financeiro',
@@ -133,17 +134,23 @@ export default function NovoChamadoPage() {
     if (!user) return;
 
     if (!formData.tipo) {
-      setError('Por favor, selecione o tipo (Bug ou Melhoria)');
+      const errorMsg = 'Por favor, selecione o tipo (Bug ou Melhoria)';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     if (formData.descricao.length < 200) {
-      setError('A descrição deve ter no mínimo 200 caracteres');
+      const errorMsg = 'A descrição deve ter no mínimo 200 caracteres';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     if (!imageBase64) {
-      setError('Por favor, selecione uma imagem');
+      const errorMsg = 'Por favor, selecione uma imagem';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -174,11 +181,14 @@ export default function NovoChamadoPage() {
         updatedAt: new Date(),
       });
 
+      toast.success('Chamado criado com sucesso!');
       // Redireciona para o dashboard
       router.push('/dashboard');
     } catch (err) {
       console.error('Erro ao criar chamado:', err);
-      setError('Erro ao criar chamado. Tente novamente.');
+      const errorMsg = 'Erro ao criar chamado. Tente novamente.';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
