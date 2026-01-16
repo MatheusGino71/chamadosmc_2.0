@@ -2,6 +2,8 @@
 
 Sistema completo de abertura e gerenciamento de chamados desenvolvido com Next.js 14, TypeScript e Firebase.
 
+🌐 **[Acesse o sistema em produção](https://chamadosmeucurso.vercel.app)**
+
 ## 🚀 Tecnologias
 
 - **Next.js 14** - Framework React com App Router
