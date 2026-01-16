@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regras para imagens de chamados
+    match /chamados/{userId}/{fileName} {
+      // Qualquer usuário autenticado pode fazer upload
+      allow create: if request.auth != null &&
+                      request.resource.size < 5 * 1024 * 1024 && // Máximo 5MB
+                      request.resource.contentType.matches('image/.*');
+      
+      // Qualquer usuário autenticado pode ler
+      allow read: if request.auth != null;
+      
+      // Apenas o dono ou admin pode deletar
+      allow delete: if request.auth != null && (
+        request.auth.uid == userId ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+  }
+}
