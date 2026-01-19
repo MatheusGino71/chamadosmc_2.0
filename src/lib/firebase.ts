@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, disableNetwork, enableNetwork } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -19,15 +19,13 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Habilita persistência offline apenas em desenvolvimento
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  enableMultiTabIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Persistência offline não habilitada: múltiplas abas abertas');
-    } else if (err.code === 'unimplemented') {
-      console.warn('Persistência offline não suportada neste navegador');
-    }
-  });
+// Garante que a rede está habilitada (remove qualquer cache de persistência offline)
+if (typeof window !== 'undefined') {
+  disableNetwork(db)
+    .then(() => enableNetwork(db))
+    .catch(() => {
+      // Ignora erros se já estiver no estado correto
+    });
 }
 
 export default app;
