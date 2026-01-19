@@ -19,15 +19,13 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Habilita persistência offline do Firestore (apenas no browser)
-if (typeof window !== 'undefined' && getApps().length > 0) {
+// Habilita persistência offline apenas em desenvolvimento
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   enableMultiTabIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
       console.warn('Persistência offline não habilitada: múltiplas abas abertas');
     } else if (err.code === 'unimplemented') {
       console.warn('Persistência offline não suportada neste navegador');
-    } else {
-      console.warn('Erro ao habilitar persistência:', err);
     }
   });
 }
