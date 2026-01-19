@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, disableNetwork, enableNetwork } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -18,14 +18,5 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-// Garante que a rede está habilitada (remove qualquer cache de persistência offline)
-if (typeof window !== 'undefined') {
-  disableNetwork(db)
-    .then(() => enableNetwork(db))
-    .catch(() => {
-      // Ignora erros se já estiver no estado correto
-    });
-}
 
 export default app;

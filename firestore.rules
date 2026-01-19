@@ -2,17 +2,17 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para chamados
-    match /chamados/{chamadoId} {
-      // Usuários autenticados podem ler seus próprios chamados
+    // Regras para tickets
+    match /tickets/{ticketId} {
+      // Usuários autenticados podem ler todos os tickets
       allow read: if request.auth != null;
       
-      // Usuários autenticados podem criar chamados
+      // Usuários autenticados podem criar tickets
       allow create: if request.auth != null && 
                       request.resource.data.userId == request.auth.uid;
       
-      // Admins podem atualizar qualquer chamado
-      // Usuários podem atualizar apenas seus próprios chamados
+      // Admins podem atualizar qualquer ticket
+      // Usuários podem atualizar apenas seus próprios tickets
       allow update: if request.auth != null && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
         resource.data.userId == request.auth.uid
@@ -24,8 +24,8 @@ service cloud.firestore {
     }
     
     // Regras para mensagens de chat
-    match /chamados/{chamadoId}/messages/{messageId} {
-      // Usuários autenticados podem ler mensagens dos chamados que têm acesso
+    match /tickets/{ticketId}/messages/{messageId} {
+      // Usuários autenticados podem ler mensagens dos tickets que têm acesso
       allow read: if request.auth != null;
       
       // Usuários autenticados podem criar mensagens
