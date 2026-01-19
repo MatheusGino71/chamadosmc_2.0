@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Sistema de Chamados - MeuCurso',
   description: 'Sistema de abertura e gerenciamento de chamados',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
