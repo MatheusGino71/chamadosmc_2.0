@@ -7,11 +7,12 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query } from 'firebase
 import { db } from '@/lib/firebase';
 import { Ticket } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X, Plus } from 'lucide-react';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
 import TicketModal from '@/components/TicketModal';
+import CreateTicketModal from '@/components/CreateTicketModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { AdminSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ export default function AdminPage() {
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
@@ -255,6 +257,14 @@ export default function AdminPage() {
                 <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
                 <p className="text-xs text-primary-600 font-semibold">Administrador</p>
               </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                aria-label="Criar novo chamado"
+              >
+                <Plus className="h-4 w-4" />
+                Novo Chamado
+              </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -557,6 +567,17 @@ export default function AdminPage() {
       {/* Modal de Visualização e Chat */}
       {showModal && selectedTicket && (
         <TicketModal ticket={selectedTicket} onClose={handleCloseModal} />
+      )}
+
+      {/* Modal de Criação de Chamado */}
+      {user && (
+        <CreateTicketModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          userId={user.uid}
+          userEmail={user.email || ''}
+          userName={user.nome || ''}
+        />
       )}
 
       {/* Diálogo de Confirmação de Logout */}
