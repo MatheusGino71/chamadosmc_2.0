@@ -34,8 +34,8 @@ service cloud.firestore {
     
     // Regras para usuários
     match /users/{userId} {
-      // Usuários podem ler seu próprio perfil
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Usuários autenticados podem ler qualquer perfil (necessário para verificar roles)
+      allow read: if request.auth != null;
       
       // Usuários podem criar seu próprio perfil
       allow create: if request.auth != null && request.auth.uid == userId;
