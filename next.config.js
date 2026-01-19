@@ -3,6 +3,25 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: ['firebasestorage.googleapis.com'],
+    formats: ['image/avif', 'image/webp'],
+  },
+  // Otimizações de performance
+  swcMinify: true,
+  compress: true,
+  poweredByHeader: false,
+  // Configurações para melhor cache
+  async headers() {
+    return [
+      {
+        source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
   },
 }
 

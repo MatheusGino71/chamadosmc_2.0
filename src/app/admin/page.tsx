@@ -65,7 +65,7 @@ export default function AdminPage() {
   useEffect(() => {
     // Escuta mudanças em todos os chamados em tempo real
     const ticketsRef = collection(db, 'tickets');
-    const q = query(ticketsRef);
+    const q = query(ticketsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
       q, 
@@ -80,14 +80,14 @@ export default function AdminPage() {
           } as Ticket;
         });
         
-        // Ordena no cliente
-        ticketsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        
         setTickets(ticketsData);
         setLoading(false);
       },
       (error) => {
         console.error('Erro ao buscar chamados:', error);
+        if (error.code === 'unavailable') {
+          toast.error('Você está offline. Tentando reconectar...');
+        }
         setLoading(false);
       }
     );

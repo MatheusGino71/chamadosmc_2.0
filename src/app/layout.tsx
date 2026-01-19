@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from 'sonner';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <Toaster position="top-right" richColors />
+          <OfflineIndicator />
         </AuthProvider>
       </body>
     </html>

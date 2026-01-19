@@ -14,6 +14,7 @@ import TicketModal from '@/components/TicketModal';
 import SearchBar from '@/components/SearchBar';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
+import { toast } from 'sonner';
 
 const statusColors = {
   'aberto': 'bg-blue-100 text-blue-800',
@@ -56,7 +57,8 @@ export default function DashboardPage() {
     const ticketsRef = collection(db, 'tickets');
     const q = query(
       ticketsRef,
-      where('userId', '==', user.uid)
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(
@@ -72,14 +74,14 @@ export default function DashboardPage() {
           } as Ticket;
         });
         
-        // Ordena no cliente
-        ticketsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        
         setTickets(ticketsData);
         setLoading(false);
       },
       (error) => {
         console.error('Erro ao buscar chamados:', error);
+        if (error.code === 'unavailable') {
+          toast.error('Você está offline. Tentando reconectar...');
+        }
         setLoading(false);
       }
     );
