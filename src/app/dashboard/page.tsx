@@ -63,32 +63,49 @@ export default function DashboardPage() {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(
-      q, 
-      (snapshot) => {
-        const ticketsData = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-          } as Ticket;
-        });
-        
-        setTickets(ticketsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Erro ao buscar chamados:', error);
-        if (error.code === 'unavailable') {
-          toast.error('Você está offline. Tentando reconectar...');
-        }
-        setLoading(false);
-      }
-    );
+    let unsubscribe: (() => void) | null = null;
 
-    return () => unsubscribe();
+    try {
+      unsubscribe = onSnapshot(
+        q, 
+        (snapshot) => {
+          const ticketsData = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+            } as Ticket;
+          });
+          
+          setTickets(ticketsData);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Erro ao buscar chamados:', error);
+          if (error.code === 'unavailable') {
+            toast.error('Você está offline. Tentando reconectar...');
+          } else if (error.code !== 'cancelled') {
+            toast.error('Erro ao carregar chamados');
+          }
+          setLoading(false);
+        }
+      );
+    } catch (error) {
+      console.error('Erro ao configurar listener:', error);
+      setLoading(false);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Erro ao cancelar listener:', error);
+        }
+      }
+    };
   }, [user]);
 
   // Filtragem e busca com useMemo para performance

@@ -6,7 +6,7 @@ import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, Me
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
-import { collection, addDoc, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -32,30 +32,47 @@ export default function TicketModal({ ticket, onClose }: TicketModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
 
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
     // Escuta mudanças nas mensagens em tempo real
-    const messagesRef = collection(db, 'messages');
-    const q = query(
-      messagesRef,
-      where('ticketId', '==', ticket.id)
-    );
+    const messagesRef = collection(db, 'tickets', ticket.id, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messagesData = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-        } as ChatMessage;
-      });
+    try {
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const messagesData = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+            } as ChatMessage;
+          });
+          
+          setMessages(messagesData);
+        },
+        (error) => {
+          console.error('Erro ao buscar mensagens:', error);
+          if (error.code !== 'cancelled') {
+            toast.error('Erro ao carregar mensagens');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Erro ao configurar listener de mensagens:', error);
+    }
 
-      // Ordena no cliente
-      messagesData.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      
-      setMessages(messagesData);
-    });
-
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Erro ao cancelar listener:', error);
+        }
+      }
+    };
   }, [ticket.id]);
 
   useEffect(() => {
@@ -71,8 +88,8 @@ export default function TicketModal({ ticket, onClose }: TicketModalProps) {
     setSending(true);
 
     try {
-      await addDoc(collection(db, 'messages'), {
-        ticketId: ticket.id,
+      const messagesRef = collection(db, 'tickets', ticket.id, 'messages');
+      await addDoc(messagesRef, {
         senderId: user.uid,
         senderName: user.nome,
         senderRole: user.role,

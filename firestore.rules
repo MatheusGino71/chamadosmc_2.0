@@ -23,13 +23,20 @@ service cloud.firestore {
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Regras para mensagens de chat
+    // Regras para mensagens de chat (subcoleção)
     match /tickets/{ticketId}/messages/{messageId} {
       // Usuários autenticados podem ler mensagens dos tickets que têm acesso
       allow read: if request.auth != null;
       
       // Usuários autenticados podem criar mensagens
       allow create: if request.auth != null;
+      
+      // Usuários podem atualizar suas próprias mensagens
+      allow update: if request.auth != null && resource.data.senderId == request.auth.uid;
+      
+      // Apenas admins podem deletar mensagens
+      allow delete: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // Regras para usuários

@@ -67,36 +67,53 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
     // Escuta mudanças em todos os chamados em tempo real
     const ticketsRef = collection(db, 'tickets');
     const q = query(ticketsRef, orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(
-      q, 
-      (snapshot) => {
-        const ticketsData = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-          } as Ticket;
-        });
-        
-        setTickets(ticketsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Erro ao buscar chamados:', error);
-        if (error.code === 'unavailable') {
-          toast.error('Você está offline. Tentando reconectar...');
+    try {
+      unsubscribe = onSnapshot(
+        q, 
+        (snapshot) => {
+          const ticketsData = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+            } as Ticket;
+          });
+          
+          setTickets(ticketsData);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Erro ao buscar chamados:', error);
+          if (error.code === 'unavailable') {
+            toast.error('Você está offline. Tentando reconectar...');
+          } else if (error.code !== 'cancelled') {
+            toast.error('Erro ao carregar chamados');
+          }
+          setLoading(false);
         }
-        setLoading(false);
-      }
-    );
+      );
+    } catch (error) {
+      console.error('Erro ao configurar listener:', error);
+      setLoading(false);
+    }
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Erro ao cancelar listener:', error);
+        }
+      }
+    };
   }, []);
 
   const handleLogout = () => {
