@@ -130,15 +130,24 @@ export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUse
               <Briefcase className="inline mr-2" size={16} />
               Setor
             </label>
-            <input
+            <select
               id="setor"
-              type="text"
               value={setor}
               onChange={(e) => setSetor(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Digite o setor"
-            />
+            >
+              <option value="">Selecione um setor</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="TI">TI</option>
+              <option value="RH">RH</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Sucesso do Aluno">Sucesso do Aluno</option>
+              <option value="Diretoria">Diretoria</option>
+              <option value="Pedagógico">Pedagógico</option>
+              <option value="Outros">Outros</option>
+            </select>
           </div>
 
           {/* Role */}
