@@ -9,7 +9,7 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query } from 'firebase
 import { db } from '@/lib/firebase';
 import { Ticket } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X, Plus } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog } from 'lucide-react';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -277,12 +277,20 @@ export default function AdminPage() {
                 <p className="text-xs text-primary-600 font-semibold">Administrador</p>
               </div>
               <button
+                onClick={() => router.push('/admin/usuarios')}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                aria-label="Gerenciar usuários"
+              >
+                <UserCog className="h-4 w-4" />
+                <span className="hidden md:inline">Usuários</span>
+              </button>
+              <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 aria-label="Criar novo chamado"
               >
                 <Plus className="h-4 w-4" />
-                Novo Chamado
+                <span className="hidden md:inline">Novo Chamado</span>
               </button>
               <button
                 onClick={handleLogout}
@@ -290,7 +298,7 @@ export default function AdminPage() {
                 aria-label="Sair da conta"
               >
                 <LogOut className="h-4 w-4" />
-                Sair
+                <span className="hidden md:inline">Sair</span>
               </button>
             </div>
           </div>

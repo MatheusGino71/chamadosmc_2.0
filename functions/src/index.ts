@@ -8,8 +8,12 @@
  */
 
 import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
+
+// Inicializa o Firebase Admin
+admin.initializeApp();
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -25,6 +29,54 @@ import * as logger from "firebase-functions/logger";
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
+
+/**
+ * Cloud Function para resetar senha de um usuário para "123456"
+ * Apenas administradores podem chamar essa função
+ */
+export const resetUserPassword = onCall(async (request) => {
+  // Verifica se o usuário está autenticado
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Usuário não autenticado");
+  }
+
+  // Busca o documento do usuário que está fazendo a requisição
+  const callerDoc = await admin.firestore()
+    .collection("users")
+    .doc(request.auth.uid)
+    .get();
+
+  // Verifica se o usuário é admin
+  if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
+    throw new HttpsError(
+      "permission-denied",
+      "Apenas administradores podem resetar senhas"
+    );
+  }
+
+  const {uid} = request.data;
+
+  if (!uid) {
+    throw new HttpsError("invalid-argument", "UID do usuário é obrigatório");
+  }
+
+  try {
+    // Reseta a senha do usuário para "123456"
+    await admin.auth().updateUser(uid, {
+      password: "123456",
+    });
+
+    logger.info(`Senha resetada para usuário ${uid} por ${request.auth.uid}`);
+
+    return {
+      success: true,
+      message: "Senha resetada com sucesso para 123456",
+    };
+  } catch (error: any) {
+    logger.error("Erro ao resetar senha:", error);
+    throw new HttpsError("internal", `Erro ao resetar senha: ${error.message}`);
+  }
+});
 
 // export const helloWorld = onRequest((request, response) => {
 //   logger.info("Hello logs!", {structuredData: true});
