@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, Link as LinkIcon, Bug, Sparkles, Loader } from 'lucide-react';
+import { X, Upload, Link as LinkIcon, Bug, Sparkles, Loader, UserCog } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { generateTicketId } from '@/lib/ticketId';
 import { toast } from 'sonner';
 import Image from 'next/image';
+
+interface User {
+  uid: string;
+  nome: string;
+}
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -14,6 +19,7 @@ interface CreateTicketModalProps {
   userId: string;
   userEmail: string;
   userName?: string;
+  admins?: User[]; // Lista de admins para atribuir
 }
 
 const setores = [
@@ -34,7 +40,7 @@ const sistemas = [
   'Ecommerce'
 ];
 
-export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName }: CreateTicketModalProps) {
+export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName, admins = [] }: CreateTicketModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     titulo: '',
@@ -43,6 +49,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     sistema: '',
     url: '',
     tipo: '' as 'bug' | 'melhoria' | '',
+    assignedTo: '', // UID do responsável
   });
   const [imageBase64, setImageBase64] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -146,6 +153,8 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     try {
       const ticketId = await generateTicketId();
 
+      const assignedAdmin = formData.assignedTo ? admins.find(a => a.uid === formData.assignedTo) : null;
+
       await addDoc(collection(db, 'tickets'), {
         ticketId,
         titulo: formData.titulo,
@@ -160,6 +169,8 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         userId,
         userName: userName || '',
         userEmail,
+        assignedTo: formData.assignedTo || null,
+        assignedToName: assignedAdmin?.nome || null,
         status: 'aberto',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -314,6 +325,32 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               ))}
             </select>
           </div>
+
+          {admins && admins.length > 0 && (
+            <div>
+              <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700 mb-1">
+                <UserCog className="inline h-4 w-4 mr-1" />
+                Atribuir Responsável (opcional)
+              </label>
+              <select
+                id="assignedTo"
+                name="assignedTo"
+                value={formData.assignedTo}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Nenhum responsável</option>
+                {admins.map((admin) => (
+                  <option key={admin.uid} value={admin.uid}>
+                    {admin.nome}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Selecione um administrador responsável por este chamado
+              </p>
+            </div>
+          )}
 
           <div>
             <label htmlFor="descricao" className="block text-sm font-medium text-gray-700 mb-1">

@@ -23,6 +23,8 @@ export interface Ticket {
   userId: string;
   userName: string;
   userEmail: string;
+  assignedTo?: string; // UID do admin responsável
+  assignedToName?: string; // Nome do admin responsável
   createdAt: Date;
   updatedAt: Date;
   closedAt?: Date;

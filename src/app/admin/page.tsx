@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, onSnapshot, doc, updateDoc, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Ticket } from '@/types';
+import { Ticket, User } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog } from 'lucide-react';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
@@ -44,6 +44,7 @@ export default function AdminPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [admins, setAdmins] = useState<User[]>([]); // Lista de admins
   const [loading, setLoading] = useState(true);
   const [draggedCard, setDraggedCard] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -58,6 +59,7 @@ export default function AdminPage() {
   const [filterPeriodo, setFilterPeriodo] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [filterDataInicio, setFilterDataInicio] = useState<string>('');
   const [filterDataFim, setFilterDataFim] = useState<string>('');
+  const [filterResponsavel, setFilterResponsavel] = useState<string>('all'); // Novo filtro
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -112,6 +114,26 @@ export default function AdminPage() {
         }
       }
     };
+  }, []);
+
+  // Carrega lista de admins
+  useEffect(() => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('role', '==', 'admin'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const adminsData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        } as User;
+      });
+      setAdmins(adminsData);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = () => {
@@ -184,6 +206,7 @@ export default function AdminPage() {
     setFilterPeriodo('all');
     setFilterDataInicio('');
     setFilterDataFim('');
+    setFilterResponsavel('all');
   };
 
   // Lógica de filtros
@@ -195,6 +218,13 @@ export default function AdminPage() {
 
     // Filtro por setor
     if (filterSetor !== 'all' && ticket.setor !== filterSetor) {
+      return false;
+    }
+
+    // Filtro por responsável
+    if (filterResponsavel === 'mine' && ticket.assignedTo !== user?.uid) {
+      return false;
+    } else if (filterResponsavel !== 'all' && filterResponsavel !== 'mine' && ticket.assignedTo !== filterResponsavel) {
       return false;
     }
 
@@ -316,7 +346,7 @@ export default function AdminPage() {
               <Filter className="h-4 w-4" />
               {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
             </button>
-            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim) && (
+            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -329,7 +359,7 @@ export default function AdminPage() {
           </div>
 
           {showFilters && (
-            <div id="admin-filters" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg" role="region" aria-label="Filtros de chamados">
+            <div id="admin-filters" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg" role="region" aria-label="Filtros de chamados">
               {/* Filtro de Sistema */}
               <div>
                 <label htmlFor="filter-sistema" className="block text-xs font-medium text-gray-700 mb-1">Sistema</label>
@@ -360,6 +390,24 @@ export default function AdminPage() {
                   <option value="all">Todos</option>
                   {setores.map((setor) => (
                     <option key={setor} value={setor}>{setor}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filtro de Responsável */}
+              <div>
+                <label htmlFor="filter-responsavel" className="block text-xs font-medium text-gray-700 mb-1">Responsável</label>
+                <select
+                  id="filter-responsavel"
+                  value={filterResponsavel}
+                  onChange={(e) => setFilterResponsavel(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por responsável"
+                >
+                  <option value="all">Todos</option>
+                  <option value="mine">Meus Chamados</option>
+                  {admins.map((admin) => (
+                    <option key={admin.uid} value={admin.uid}>{admin.nome}</option>
                   ))}
                 </select>
               </div>
@@ -547,6 +595,14 @@ export default function AdminPage() {
                                     <span>{ticket.userName}</span>
                                   </div>
 
+                                  {/* Responsável */}
+                                  {ticket.assignedToName && (
+                                    <div className="flex items-center gap-2 text-xs text-indigo-600 mb-2 bg-indigo-50 px-2 py-1 rounded">
+                                      <UserCog className="h-3 w-3" />
+                                      <span className="font-medium">Responsável: {ticket.assignedToName}</span>
+                                    </div>
+                                  )}
+
                                   {/* Contador de Tempo em Aberto ou Tempo de Resolução */}
                                   {ticket.status === 'fechado' && ticket.closedAt ? (
                                     <div className="flex items-center gap-2 text-xs text-green-600 font-medium mb-3 pb-3 border-b border-gray-200 bg-green-50 px-2 py-1 rounded">
@@ -602,6 +658,7 @@ export default function AdminPage() {
           userId={user.uid}
           userEmail={user.email || ''}
           userName={user.nome || ''}
+          admins={admins}
         />
       )}
 
