@@ -18,6 +18,7 @@ const setores = [
   'Comercial',
   'Sucesso do Aluno',
   'Diretoria',
+  'Pedagógico',
   'Outros'
 ];
 

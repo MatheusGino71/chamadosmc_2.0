@@ -245,7 +245,7 @@ export default function AdminPage() {
     fechados: filteredTickets.filter(t => t.status === 'fechado').length,
   };
 
-  const setores = ['Financeiro', 'TI', 'RH', 'Marketing', 'Comercial', 'Sucesso do Aluno', 'Diretoria', 'Outros'];
+  const setores = ['Financeiro', 'TI', 'RH', 'Marketing', 'Comercial', 'Sucesso do Aluno', 'Diretoria', 'Pedagógico', 'Outros'];
   const sistemas = ['BIPE', 'Área do Aluno', 'Ecommerce'];
 
   return (
