@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Ticket, ChatMessage } from '@/types';
-import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare } from 'lucide-react';
+import { Ticket, ChatMessage, User } from '@/types';
+import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
-import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 interface TicketModalProps {
   ticket: Ticket;
   onClose: () => void;
+  admins?: User[];
 }
 
 const statusLabels = {
@@ -23,11 +24,13 @@ const statusLabels = {
   'fechado': { label: 'Fechado', color: 'bg-gray-100 text-gray-800' },
 };
 
-export default function TicketModal({ ticket, onClose }: TicketModalProps) {
+export default function TicketModal({ ticket, onClose, admins = [] }: TicketModalProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [assignedTo, setAssignedTo] = useState(ticket.assignedTo || '');
+  const [updatingAssignment, setUpdatingAssignment] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
 
@@ -110,6 +113,31 @@ export default function TicketModal({ ticket, onClose }: TicketModalProps) {
       }
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleUpdateAssignment = async (newAssignedTo: string) => {
+    if (!user || user.role !== 'admin') return;
+
+    setUpdatingAssignment(true);
+
+    try {
+      const ticketRef = doc(db, 'tickets', ticket.id);
+      const assignedAdmin = newAssignedTo ? admins.find(a => a.uid === newAssignedTo) : null;
+
+      await updateDoc(ticketRef, {
+        assignedTo: newAssignedTo || null,
+        assignedToName: assignedAdmin?.nome || null,
+        updatedAt: new Date(),
+      });
+
+      setAssignedTo(newAssignedTo);
+      toast.success(newAssignedTo ? 'Responsável atribuído com sucesso!' : 'Responsável removido com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar responsável:', error);
+      toast.error('Erro ao atualizar responsável');
+    } finally {
+      setUpdatingAssignment(false);
     }
   };
 
@@ -212,6 +240,32 @@ export default function TicketModal({ ticket, onClose }: TicketModalProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Responsável (apenas para admins) */}
+              {user?.role === 'admin' && admins.length > 0 && (
+                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                  <h3 className="text-sm font-semibold text-indigo-700 mb-3 flex items-center gap-2">
+                    <UserCog className="h-4 w-4" />
+                    Atribuir Responsável
+                  </h3>
+                  <select
+                    value={assignedTo}
+                    onChange={(e) => handleUpdateAssignment(e.target.value)}
+                    disabled={updatingAssignment}
+                    className="w-full px-3 py-2 border border-indigo-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Nenhum responsável</option>
+                    {admins.map((admin) => (
+                      <option key={admin.uid} value={admin.uid}>
+                        {admin.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-indigo-600 mt-2">
+                    {assignedTo ? `Atribuído a: ${admins.find(a => a.uid === assignedTo)?.nome}` : 'Nenhum administrador responsável por este chamado'}
+                  </p>
+                </div>
+              )}
 
               {/* Descrição */}
               <div>

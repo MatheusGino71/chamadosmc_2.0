@@ -647,7 +647,7 @@ export default function AdminPage() {
 
       {/* Modal de Visualização e Chat */}
       {showModal && selectedTicket && (
-        <TicketModal ticket={selectedTicket} onClose={handleCloseModal} />
+        <TicketModal ticket={selectedTicket} onClose={handleCloseModal} admins={admins} />
       )}
 
       {/* Modal de Criação de Chamado */}
