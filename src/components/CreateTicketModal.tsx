@@ -186,6 +186,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         sistema: '',
         url: '',
         tipo: '',
+        assignedTo: '',
       });
       setImageBase64('');
       setImagePreview('');
