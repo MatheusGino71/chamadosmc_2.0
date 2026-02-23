@@ -76,7 +76,7 @@ export default function UsersManagementPage() {
     setEditModalOpen(true);
   };
 
-  const handleSaveUser = async (userId: string, data: { nome: string; setor: string; role: 'user' | 'admin' }) => {
+  const handleSaveUser = async (userId: string, data: { nome: string; setor: string; cpf?: string; role: 'user' | 'admin' }) => {
     try {
       await updateDoc(doc(db, 'users', userId), {
         ...data,
@@ -298,6 +298,7 @@ export default function UsersManagementPage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold">Usuário</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Email</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Setor</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">CPF</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Permissão</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Cadastro</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold">Ações</th>
@@ -306,7 +307,7 @@ export default function UsersManagementPage() {
               <tbody className="divide-y divide-gray-200">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                       <UserIcon className="mx-auto mb-4 text-gray-400" size={48} />
                       <p className="text-lg font-medium">Nenhum usuário encontrado</p>
                       <p className="text-sm">Tente ajustar os filtros de busca</p>
@@ -344,6 +345,13 @@ export default function UsersManagementPage() {
                           <Briefcase size={16} className="text-gray-400" />
                           <span className="text-sm">{user.setor}</span>
                         </div>
+                      </td>
+
+                      {/* CPF */}
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-700">
+                          {user.cpf || '-'}
+                        </span>
                       </td>
 
                       {/* Role */}

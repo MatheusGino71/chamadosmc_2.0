@@ -37,7 +37,8 @@ const setores = [
 const sistemas = [
   'BIPE',
   'Área do Aluno',
-  'Ecommerce'
+  'Ecommerce',
+  'Outros'
 ];
 
 export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName, admins = [] }: CreateTicketModalProps) {
@@ -47,6 +48,8 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     descricao: '',
     setor: '',
     sistema: '',
+    tipoSolicitacao: '',
+    cpf: '',
     url: '',
     tipo: '' as 'bug' | 'melhoria' | '',
   });
@@ -159,6 +162,8 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         tipo: formData.tipo,
         setor: formData.setor,
         sistema: formData.sistema,
+        tipoSolicitacao: formData.tipoSolicitacao || '',
+        cpf: formData.cpf || '',
         imageBase64: imageBase64 || '',
         url: formData.url || '',
         documentBase64: documentBase64 || '',
@@ -179,6 +184,8 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         descricao: '',
         setor: '',
         sistema: '',
+        tipoSolicitacao: '',
+        cpf: '',
         url: '',
         tipo: '',
       });
@@ -320,6 +327,56 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               ))}
             </select>
           </div>
+
+          {/* Campo Tipo de Solicitação - aparece apenas para sistemas específicos */}
+          {(formData.sistema === 'BIPE' || formData.sistema === 'Área do Aluno') && (
+            <div>
+              <label htmlFor="tipoSolicitacao" className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo de Solicitação *
+              </label>
+              <select
+                id="tipoSolicitacao"
+                name="tipoSolicitacao"
+                required
+                value={formData.tipoSolicitacao}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Selecione o tipo</option>
+                <option value="Solicitar uma Base">Solicitar uma Base</option>
+                <option value="Criação de conta">Criação de conta</option>
+              </select>
+            </div>
+          )}
+
+          {/* Campo CPF - aparece apenas quando seleciona "Criação de conta" */}
+          {formData.tipoSolicitacao === 'Criação de conta' && (
+            <div>
+              <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">
+                CPF *
+              </label>
+              <input
+                type="text"
+                id="cpf"
+                name="cpf"
+                required
+                maxLength={14}
+                value={formData.cpf}
+                onChange={(e) => {
+                  // Formata CPF automaticamente
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 11) {
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                  }
+                  setFormData({ ...formData, cpf: value });
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                placeholder="000.000.000-00"
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="descricao" className="block text-sm font-medium text-gray-700 mb-1">

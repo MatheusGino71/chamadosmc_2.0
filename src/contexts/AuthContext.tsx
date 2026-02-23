@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: firebaseUser.email!,
               nome: userData.nome,
               setor: userData.setor,
+              cpf: userData.cpf || '',
               role: userData.role,
               createdAt: userData.createdAt?.toDate() || new Date(),
             });
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (data: RegisterData) => {
     try {
-      const { email, password, nome, setor } = data;
+      const { email, password, nome, setor, cpf } = data;
       
       // Cria usuário no Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -78,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         nome,
         setor,
+        cpf: cpf || '',
         role: 'user', // Por padrão, novos usuários são 'user'
         createdAt: new Date(),
       });

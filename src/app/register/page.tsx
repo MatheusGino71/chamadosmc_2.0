@@ -27,6 +27,7 @@ export default function RegisterPage() {
     nome: '',
     email: '',
     setor: '',
+    cpf: '',
     password: '',
     confirmPassword: '',
   });
@@ -61,6 +62,7 @@ export default function RegisterPage() {
         password: formData.password,
         nome: formData.nome,
         setor: formData.setor,
+        cpf: formData.cpf,
       });
       toast.success('Conta criada com sucesso! Bem-vindo!');
       // Redireciona para home que vai detectar o role
@@ -170,6 +172,31 @@ export default function RegisterPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">
+                CPF
+              </label>
+              <input
+                id="cpf"
+                name="cpf"
+                type="text"
+                maxLength={14}
+                value={formData.cpf}
+                onChange={(e) => {
+                  // Formata CPF automaticamente
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 11) {
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                  }
+                  setFormData({ ...formData, cpf: value });
+                }}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                placeholder="000.000.000-00"
+              />
             </div>
 
             <div>

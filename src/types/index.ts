@@ -3,6 +3,7 @@ export interface User {
   email: string;
   nome: string;
   setor: string;
+  cpf?: string;
   role: 'user' | 'admin';
   createdAt: Date;
 }
@@ -16,6 +17,8 @@ export interface Ticket {
   status: 'aberto' | 'em-andamento' | 'resolvido' | 'fechado';
   setor: string;
   sistema: string;
+  tipoSolicitacao?: string; // 'Solicitar uma Base' ou 'Criação de conta'
+  cpf?: string; // CPF para criação de conta
   imageBase64?: string;
   url?: string;
   documentBase64?: string;
@@ -52,4 +55,5 @@ export interface RegisterData {
   password: string;
   nome: string;
   setor: string;
+  cpf?: string;
 }

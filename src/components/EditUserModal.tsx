@@ -9,12 +9,13 @@ interface EditUserModalProps {
   isOpen: boolean;
   user: UserType | null;
   onClose: () => void;
-  onSave: (userId: string, data: { nome: string; setor: string; role: 'user' | 'admin' }) => Promise<void>;
+  onSave: (userId: string, data: { nome: string; setor: string; cpf?: string; role: 'user' | 'admin' }) => Promise<void>;
 }
 
 export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUserModalProps) {
   const [nome, setNome] = useState('');
   const [setor, setSetor] = useState('');
+  const [cpf, setCpf] = useState('');
   const [role, setRole] = useState<'user' | 'admin'>('user');
   const [loading, setLoading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -25,6 +26,7 @@ export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUse
     if (user) {
       setNome(user.nome);
       setSetor(user.setor);
+      setCpf(user.cpf || '');
       setRole(user.role);
     }
   }, [user]);
@@ -53,7 +55,7 @@ export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUse
 
     setLoading(true);
     try {
-      await onSave(user.uid, { nome, setor, role });
+      await onSave(user.uid, { nome, setor, cpf, role });
       onClose();
     } finally {
       setLoading(false);
@@ -148,6 +150,31 @@ export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUse
               <option value="Pedagógico">Pedagógico</option>
               <option value="Outros">Outros</option>
             </select>
+          </div>
+
+          {/* CPF */}
+          <div>
+            <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-2">
+              CPF
+            </label>
+            <input
+              id="cpf"
+              type="text"
+              maxLength={14}
+              value={cpf}
+              onChange={(e) => {
+                // Formata CPF automaticamente
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length <= 11) {
+                  value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                  value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                  value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                }
+                setCpf(value);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="000.000.000-00"
+            />
           </div>
 
           {/* Role */}
