@@ -41,6 +41,7 @@ export default function NovoChamadoPage() {
     sistema: '',
     tipoSolicitacao: '',
     cpf: '',
+    email: '',
     url: '',
     tipo: '' as 'bug' | 'melhoria' | '',
   });
@@ -175,6 +176,7 @@ export default function NovoChamadoPage() {
         sistema: formData.sistema,
         tipoSolicitacao: formData.tipoSolicitacao || '',
         cpf: formData.cpf || '',
+        email: formData.email || '',
         imageBase64: imageBase64 || '',
         url: formData.url || '',
         documentBase64: documentBase64 || '',
@@ -332,8 +334,8 @@ export default function NovoChamadoPage() {
               </select>
             </div>
 
-            {/* Campo Tipo de Solicitação - aparece apenas para sistemas específicos */}
-            {(formData.sistema === 'BIPE' || formData.sistema === 'Área do Aluno') && (
+            {/* Campo Tipo de Solicitação - aparece apenas para Outros */}
+            {formData.sistema === 'Outros' && (
               <div>
                 <label htmlFor="tipoSolicitacao" className="block text-sm font-medium text-gray-700 mb-1">
                   Tipo de Solicitação *
@@ -347,14 +349,13 @@ export default function NovoChamadoPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">Selecione o tipo</option>
-                  <option value="Solicitar uma Base">Solicitar uma Base</option>
                   <option value="Criação de conta">Criação de conta</option>
                 </select>
               </div>
             )}
 
-            {/* Campo CPF - aparece apenas quando seleciona "Criação de conta" */}
-            {formData.tipoSolicitacao === 'Criação de conta' && (
+            {/* Campo CPF - aparece apenas quando seleciona "Criação de conta" em Outros */}
+            {formData.tipoSolicitacao === 'Criação de conta' && formData.sistema === 'Outros' && (
               <div>
                 <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">
                   CPF *
@@ -380,6 +381,50 @@ export default function NovoChamadoPage() {
                   placeholder="000.000.000-00"
                 />
               </div>
+            )}
+
+            {/* Campos opcionais de Email e CPF do aluno - aparecem para Área do Aluno quando tipo é bug */}
+            {formData.sistema === 'Área do Aluno' && formData.tipo === 'bug' && (
+              <>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email do Aluno (Opcional)
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="aluno@exemplo.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">
+                    CPF do Aluno (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="cpf"
+                    name="cpf"
+                    maxLength={14}
+                    value={formData.cpf}
+                    onChange={(e) => {
+                      // Formata CPF automaticamente
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 11) {
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                      }
+                      setFormData({ ...formData, cpf: value });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+              </>
             )}
 
             <div>
