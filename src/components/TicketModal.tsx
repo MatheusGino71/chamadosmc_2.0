@@ -2,19 +2,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Ticket, ChatMessage, User } from '@/types';
-import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog } from 'lucide-react';
+import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
-import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import ConfirmDialog from './ConfirmDialog';
 
 interface TicketModalProps {
   ticket: Ticket;
   onClose: () => void;
   admins?: User[];
+  onDelete?: () => void;
 }
 
 const statusLabels = {
@@ -24,13 +26,15 @@ const statusLabels = {
   'fechado': { label: 'Fechado', color: 'bg-gray-100 text-gray-800' },
 };
 
-export default function TicketModal({ ticket, onClose, admins = [] }: TicketModalProps) {
+export default function TicketModal({ ticket, onClose, admins = [], onDelete }: TicketModalProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [assignedTo, setAssignedTo] = useState(ticket.assignedTo || '');
   const [updatingAssignment, setUpdatingAssignment] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
 
@@ -138,6 +142,53 @@ export default function TicketModal({ ticket, onClose, admins = [] }: TicketModa
       toast.error('Erro ao atualizar responsável');
     } finally {
       setUpdatingAssignment(false);
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!user) return;
+
+    // Verifica se o usuário é admin ou o dono do chamado
+    if (user.role !== 'admin' && user.uid !== ticket.userId) {
+      toast.error('Você não tem permissão para excluir este chamado');
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      // Excluir todas as mensagens do chat
+      const messagesRef = collection(db, 'tickets', ticket.id, 'messages');
+      const messagesSnapshot = await getDocs(messagesRef);
+      
+      const deleteMessagesPromises = messagesSnapshot.docs.map(msg => 
+        deleteDoc(doc(db, 'tickets', ticket.id, 'messages', msg.id))
+      );
+      
+      await Promise.all(deleteMessagesPromises);
+
+      // Excluir o chamado
+      await deleteDoc(doc(db, 'tickets', ticket.id));
+
+      toast.success('Chamado excluído com sucesso!');
+      
+      // Chamar callback se fornecido
+      if (onDelete) {
+        onDelete();
+      }
+      
+      // Fechar modal
+      onClose();
+    } catch (error: any) {
+      console.error('Erro ao excluir chamado:', error);
+      
+      if (error?.code === 'permission-denied') {
+        toast.error('Erro de permissão. Verifique as regras do Firestore.');
+      } else {
+        toast.error('Erro ao excluir chamado: ' + (error?.message || 'Tente novamente.'));
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -419,15 +470,40 @@ export default function TicketModal({ ticket, onClose, admins = [] }: TicketModa
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
-          >
-            Fechar
-          </button>
+        <div className="flex justify-between gap-3 p-6 border-t border-gray-200">
+          {/* Botão de Excluir - mostrado apenas para admin ou dono do chamado */}
+          {(user?.role === 'admin' || user?.uid === ticket.userId) && (
+            <button
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={deleting}
+              className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir Chamado
+            </button>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition"
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Diálogo de Confirmação de Exclusão */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteTicket}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir o chamado ${ticket.ticketId}? Esta ação não pode ser desfeita e todas as mensagens do chat também serão excluídas.`}
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -41,8 +41,21 @@ const sistemas = [
   'Outros'
 ];
 
+interface FieldErrors {
+  titulo?: string;
+  tipo?: string;
+  setor?: string;
+  sistema?: string;
+  tipoSolicitacao?: string;
+  cpf?: string;
+  descricao?: string;
+  url?: string;
+  imageBase64?: string;
+}
+
 export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName, admins = [] }: CreateTicketModalProps) {
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -62,10 +75,15 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
   const [showMelhoriaModal, setShowMelhoriaModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    // Limpa erro do campo ao digitar
+    if (errors[name as keyof FieldErrors]) {
+      setErrors({ ...errors, [name]: undefined });
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +104,10 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         const base64String = reader.result as string;
         setImageBase64(base64String);
         setImagePreview(base64String);
+        // Limpa erro de imagem quando uma imagem é selecionada
+        if (errors.imageBase64) {
+          setErrors({ ...errors, imageBase64: undefined });
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -133,21 +155,91 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     setDocumentName('');
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: FieldErrors = {};
+
+    // Valida título
+    if (!formData.titulo.trim()) {
+      newErrors.titulo = 'O título é obrigatório';
+    } else if (formData.titulo.trim().length < 5) {
+      newErrors.titulo = 'O título deve ter no mínimo 5 caracteres';
+    }
+
+    // Valida tipo
+    if (!formData.tipo) {
+      newErrors.tipo = 'Selecione o tipo (Bug ou Melhoria)';
+    }
+
+    // Valida setor
+    if (!formData.setor) {
+      newErrors.setor = 'Selecione um setor';
+    }
+
+    // Valida sistema
+    if (!formData.sistema) {
+      newErrors.sistema = 'Selecione um sistema';
+    }
+
+    // Valida tipo de solicitação se sistema for "Outros"
+    if (formData.sistema === 'Outros' && !formData.tipoSolicitacao) {
+      newErrors.tipoSolicitacao = 'Selecione o tipo de solicitação';
+    }
+
+    // Valida CPF se for criação de conta
+    if (formData.tipoSolicitacao === 'Criação de conta' && formData.sistema === 'Outros') {
+      if (!formData.cpf.trim()) {
+        newErrors.cpf = 'O CPF é obrigatório para criação de conta';
+      } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
+        newErrors.cpf = 'CPF inválido';
+      }
+    }
+
+    // Valida descrição
+    if (!formData.descricao.trim()) {
+      newErrors.descricao = 'A descrição é obrigatória';
+    } else if (formData.descricao.trim().length < 200) {
+      newErrors.descricao = `A descrição deve ter no mínimo 200 caracteres (atual: ${formData.descricao.trim().length})`;
+    }
+
+    // Valida URL
+    if (!formData.url.trim()) {
+      newErrors.url = 'A URL é obrigatória';
+    } else {
+      try {
+        new URL(formData.url);
+      } catch {
+        newErrors.url = 'URL inválida. Use o formato: https://exemplo.com';
+      }
+    }
+
+    // Valida imagem
+    if (!imageBase64) {
+      newErrors.imageBase64 = 'A imagem é obrigatória';
+    }
+
+    setErrors(newErrors);
+
+    // Se houver erros, mostra toast e retorna false
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Por favor, preencha todos os campos obrigatórios corretamente');
+      // Scroll para o primeiro campo com erro
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.tipo) {
-      toast.error('Por favor, selecione o tipo (Bug ou Melhoria)');
-      return;
-    }
-
-    if (formData.descricao.length < 200) {
-      toast.error('A descrição deve ter no mínimo 200 caracteres');
-      return;
-    }
-
-    if (!imageBase64) {
-      toast.error('Por favor, selecione uma imagem');
+    // Valida formulário
+    if (!validateForm()) {
       return;
     }
 
@@ -231,12 +323,16 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               type="text"
               id="titulo"
               name="titulo"
-              required
               value={formData.titulo}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                errors.titulo ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Ex: Problema com acesso ao sistema"
             />
+            {errors.titulo && (
+              <p className="text-red-600 text-sm mt-1">{errors.titulo}</p>
+            )}
           </div>
 
           <div>
@@ -247,10 +343,15 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               <div>
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, tipo: 'bug' })}
+                  onClick={() => {
+                    setFormData({ ...formData, tipo: 'bug' });
+                    setErrors({ ...errors, tipo: undefined });
+                  }}
                   className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
                     formData.tipo === 'bug'
                       ? 'border-red-500 bg-red-50 text-red-700'
+                      : errors.tipo
+                      ? 'border-red-500 bg-white text-gray-700'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-red-300'
                   }`}
                 >
@@ -268,10 +369,15 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               <div>
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, tipo: 'melhoria' })}
+                  onClick={() => {
+                    setFormData({ ...formData, tipo: 'melhoria' });
+                    setErrors({ ...errors, tipo: undefined });
+                  }}
                   className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
                     formData.tipo === 'melhoria'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : errors.tipo
+                      ? 'border-red-500 bg-white text-gray-700'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
                   }`}
                 >
@@ -287,6 +393,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                 </button>
               </div>
             </div>
+            {errors.tipo && (
+              <p className="text-red-600 text-sm mt-1">{errors.tipo}</p>
+            )}
           </div>
 
           <div>
@@ -296,10 +405,11 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             <select
               id="setor"
               name="setor"
-              required
               value={formData.setor}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                errors.setor ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+              }`}
             >
               <option value="">Selecione um setor</option>
               {setores.map((setor) => (
@@ -308,6 +418,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                 </option>
               ))}
             </select>
+            {errors.setor && (
+              <p className="text-red-600 text-sm mt-1">{errors.setor}</p>
+            )}
           </div>
 
           <div>
@@ -317,10 +430,11 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             <select
               id="sistema"
               name="sistema"
-              required
               value={formData.sistema}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                errors.sistema ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+              }`}
             >
               <option value="">Selecione um sistema</option>
               {sistemas.map((sistema) => (
@@ -329,6 +443,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                 </option>
               ))}
             </select>
+            {errors.sistema && (
+              <p className="text-red-600 text-sm mt-1">{errors.sistema}</p>
+            )}
           </div>
 
           {/* Campo Tipo de Solicitação - aparece apenas para Outros */}
@@ -340,14 +457,18 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               <select
                 id="tipoSolicitacao"
                 name="tipoSolicitacao"
-                required
                 value={formData.tipoSolicitacao}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                  errors.tipoSolicitacao ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                }`}
               >
                 <option value="">Selecione o tipo</option>
                 <option value="Criação de conta">Criação de conta</option>
               </select>
+              {errors.tipoSolicitacao && (
+                <p className="text-red-600 text-sm mt-1">{errors.tipoSolicitacao}</p>
+              )}
             </div>
           )}
 
@@ -361,7 +482,6 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                 type="text"
                 id="cpf"
                 name="cpf"
-                required
                 maxLength={14}
                 value={formData.cpf}
                 onChange={(e) => {
@@ -373,10 +493,19 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                     value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
                   }
                   setFormData({ ...formData, cpf: value });
+                  // Limpa erro ao digitar
+                  if (errors.cpf) {
+                    setErrors({ ...errors, cpf: undefined });
+                  }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                  errors.cpf ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="000.000.000-00"
               />
+              {errors.cpf && (
+                <p className="text-red-600 text-sm mt-1">{errors.cpf}</p>
+              )}
             </div>
           )}
 
@@ -431,17 +560,22 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             <textarea
               id="descricao"
               name="descricao"
-              required
               rows={6}
-              minLength={200}
               value={formData.descricao}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                errors.descricao ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+              }`}
               placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..."
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className={`text-xs mt-1 ${
+              formData.descricao.length < 200 ? 'text-gray-500' : 'text-green-600'
+            }`}>
               {formData.descricao.length}/200 caracteres mínimos
             </p>
+            {errors.descricao && (
+              <p className="text-red-600 text-sm mt-1">{errors.descricao}</p>
+            )}
           </div>
 
           <div>
@@ -456,13 +590,17 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                 type="url"
                 id="url"
                 name="url"
-                required
                 value={formData.url}
                 onChange={handleChange}
-                className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className={`w-full pl-10 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                  errors.url ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="https://exemplo.com"
               />
             </div>
+            {errors.url && (
+              <p className="text-red-600 text-sm mt-1">{errors.url}</p>
+            )}
           </div>
 
           <div>
@@ -471,21 +609,22 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             </label>
             
             {!imagePreview ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition">
+              <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary-400 transition ${
+                errors.imageBase64 ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
                   className="hidden"
                   id="image-upload"
-                  required
                 />
                 <label
                   htmlFor="image-upload"
                   className="cursor-pointer flex flex-col items-center"
                 >
-                  <Upload className="h-12 w-12 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-600">
+                  <Upload className={`h-12 w-12 mb-2 ${errors.imageBase64 ? 'text-red-400' : 'text-gray-400'}`} />
+                  <span className={`text-sm ${errors.imageBase64 ? 'text-red-700' : 'text-gray-600'}`}>
                     Clique para selecionar uma imagem
                   </span>
                   <span className="text-xs text-gray-500 mt-1">
@@ -512,6 +651,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                   <X className="h-4 w-4" />
                 </button>
               </div>
+            )}
+            {errors.imageBase64 && (
+              <p className="text-red-600 text-sm mt-1">{errors.imageBase64}</p>
             )}
           </div>
 

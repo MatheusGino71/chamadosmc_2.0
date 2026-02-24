@@ -18,9 +18,11 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid
       );
       
-      // Apenas admins podem deletar
-      allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Admins ou o próprio dono do ticket podem deletar
+      allow delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        resource.data.userId == request.auth.uid
+      );
     }
     
     // Regras para mensagens de chat (subcoleção)
@@ -34,9 +36,11 @@ service cloud.firestore {
       // Usuários podem atualizar suas próprias mensagens
       allow update: if request.auth != null && resource.data.senderId == request.auth.uid;
       
-      // Apenas admins podem deletar mensagens
-      allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Admins ou o dono do ticket podem deletar mensagens
+      allow delete: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId == request.auth.uid
+      );
     }
     
     // Regras para usuários
