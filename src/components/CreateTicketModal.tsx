@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, Link as LinkIcon, Bug, Sparkles, Loader, UserCog } from 'lucide-react';
+import { X, Upload, Link as LinkIcon, Bug, Sparkles, Wrench, Loader, UserCog } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { generateTicketId } from '@/lib/ticketId';
@@ -47,6 +47,7 @@ interface FieldErrors {
   setor?: string;
   sistema?: string;
   tipoSolicitacao?: string;
+  subtipoInfra?: string;
   cpf?: string;
   descricao?: string;
   url?: string;
@@ -62,10 +63,11 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     setor: '',
     sistema: '',
     tipoSolicitacao: '',
+    subtipoInfra: '',
     cpf: '',
     email: '',
     url: '',
-    tipo: '' as 'bug' | 'melhoria' | '',
+    tipo: '' as 'bug' | 'melhoria' | 'infra' | '',
   });
   const [imageBase64, setImageBase64] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -73,6 +75,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
   const [documentName, setDocumentName] = useState<string>('');
   const [showBugModal, setShowBugModal] = useState(false);
   const [showMelhoriaModal, setShowMelhoriaModal] = useState(false);
+  const [showInfraModal, setShowInfraModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -167,7 +170,12 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
 
     // Valida tipo
     if (!formData.tipo) {
-      newErrors.tipo = 'Selecione o tipo (Bug ou Melhoria)';
+      newErrors.tipo = 'Selecione o tipo (Bug, Melhoria ou Infra)';
+    }
+
+    // Valida subtipo infra se tipo for "infra"
+    if (formData.tipo === 'infra' && !formData.subtipoInfra) {
+      newErrors.subtipoInfra = 'Selecione o subtipo de infraestrutura';
     }
 
     // Valida setor
@@ -256,6 +264,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         setor: formData.setor,
         sistema: formData.sistema,
         tipoSolicitacao: formData.tipoSolicitacao || '',
+        subtipoInfra: formData.subtipoInfra || '',
         cpf: formData.cpf || '',
         email: formData.email || '',
         imageBase64: imageBase64 || '',
@@ -279,6 +288,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         setor: '',
         sistema: '',
         tipoSolicitacao: '',
+        subtipoInfra: '',
         cpf: '',
         email: '',
         url: '',
@@ -339,7 +349,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tipo *
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <button
                   type="button"
@@ -392,11 +402,62 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
                   Não sabe o que é melhoria? Clique aqui
                 </button>
               </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ ...formData, tipo: 'infra' });
+                    setErrors({ ...errors, tipo: undefined });
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
+                    formData.tipo === 'infra'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : errors.tipo
+                      ? 'border-red-500 bg-white text-gray-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  <Wrench className="h-5 w-5" />
+                  <span className="font-medium">Infra</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInfraModal(true)}
+                  className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
+                >
+                  Não sabe o que é infra? Clique aqui
+                </button>
+              </div>
             </div>
             {errors.tipo && (
               <p className="text-red-600 text-sm mt-1">{errors.tipo}</p>
             )}
           </div>
+
+          {/* Campo Subtipo Infra - aparece apenas quando tipo é 'infra' */}
+          {formData.tipo === 'infra' && (
+            <div>
+              <label htmlFor="subtipoInfra" className="block text-sm font-medium text-gray-700 mb-1">
+                Subtipo *
+              </label>
+              <select
+                id="subtipoInfra"
+                name="subtipoInfra"
+                value={formData.subtipoInfra}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                  errors.subtipoInfra ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Selecione um subtipo</option>
+                <option value="Solicitar aparelho/máquina">Solicitar aparelho/máquina</option>
+                <option value="Suporte">Suporte</option>
+              </select>
+              {errors.subtipoInfra && (
+                <p className="text-red-600 text-sm mt-1">{errors.subtipoInfra}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label htmlFor="setor" className="block text-sm font-medium text-gray-700 mb-1">
@@ -822,6 +883,59 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowMelhoriaModal(false)}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Explicativo sobre Infra */}
+      {showInfraModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Wrench className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">O que é Infraestrutura?</h2>
+                </div>
+                <button
+                  onClick={() => setShowInfraModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="prose prose-sm max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  <strong>Infraestrutura</strong> refere-se a todos os recursos físicos e tecnológicos necessários para o funcionamento adequado das operações da organização. Isso inclui equipamentos, máquinas, periféricos e todo o suporte técnico relacionado.
+                </p>
+                
+                <p className="text-gray-700 leading-relaxed mt-4">
+                  Solicitações de infraestrutura são essenciais para garantir que todos os colaboradores tenham as ferramentas necessárias para desempenhar suas funções com eficiência e segurança.
+                </p>
+
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Exemplos de Solicitações de Infra:</h3>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Solicitar novo computador ou notebook</li>
+                    <li>• Requisitar periféricos (mouse, teclado, monitor)</li>
+                    <li>• Pedir suporte técnico para equipamentos</li>
+                    <li>• Solicitar manutenção de máquinas</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowInfraModal(false)}
                   className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
                 >
                   Entendi

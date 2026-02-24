@@ -13,11 +13,12 @@ export interface Ticket {
   ticketId: string; // ID único formatado (CHM-2026-0001)
   titulo: string;
   descricao: string;
-  tipo: 'bug' | 'melhoria';
+  tipo: 'bug' | 'melhoria' | 'infra';
   status: 'aberto' | 'em-andamento' | 'resolvido' | 'fechado';
   setor: string;
   sistema: string;
-  tipoSolicitacao?: string; // 'Solicitar uma Base' ou 'Criação de conta'
+  tipoSolicitacao?: string; // 'Solicitar uma Base' ou 'Criação de conta' ou subtipos de INFRA
+  subtipoInfra?: string; // 'Solicitar aparelho/máquina' ou 'Suporte'
   cpf?: string; // CPF para criação de conta
   imageBase64?: string;
   url?: string;

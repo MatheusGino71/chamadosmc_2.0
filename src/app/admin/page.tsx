@@ -7,7 +7,7 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'f
 import { db } from '@/lib/firebase';
 import { Ticket, User } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog } from 'lucide-react';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -554,7 +554,7 @@ export default function AdminPage() {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   className={`bg-white rounded-lg shadow-md border-l-4 ${
-                                    ticket.tipo === 'bug' ? 'border-l-red-500' : 'border-l-blue-500'
+                                    ticket.tipo === 'bug' ? 'border-l-red-500' : ticket.tipo === 'melhoria' ? 'border-l-blue-500' : 'border-l-purple-500'
                                   } p-4 cursor-grab active:cursor-grabbing transition-all duration-200 ${
                                     snapshot.isDragging 
                                       ? 'shadow-2xl ring-4 ring-primary-400 rotate-2 scale-105' 
@@ -577,10 +577,18 @@ export default function AdminPage() {
                                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${
                                       ticket.tipo === 'bug' 
                                         ? 'bg-red-100 text-red-700' 
-                                        : 'bg-blue-100 text-blue-700'
+                                        : ticket.tipo === 'melhoria'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-purple-100 text-purple-700'
                                     }`}>
-                                      {ticket.tipo === 'bug' ? <Bug className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-                                      {ticket.tipo === 'bug' ? 'Bug' : 'Melhoria'}
+                                      {ticket.tipo === 'bug' ? (
+                                        <Bug className="h-3 w-3" />
+                                      ) : ticket.tipo === 'melhoria' ? (
+                                        <Sparkles className="h-3 w-3" />
+                                      ) : (
+                                        <Wrench className="h-3 w-3" />
+                                      )}
+                                      {ticket.tipo === 'bug' ? 'Bug' : ticket.tipo === 'melhoria' ? 'Melhoria' : 'Infra'}
                                     </span>
                                   </div>
 

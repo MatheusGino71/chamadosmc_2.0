@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ticket } from '@/types';
-import { LogOut, Plus, User, Briefcase, Clock, CheckCircle, Bug, Sparkles, Eye, MessageSquare, Filter, SortAsc, SortDesc, ChevronDown } from 'lucide-react';
+import { LogOut, Plus, User, Briefcase, Clock, CheckCircle, Bug, Sparkles, Wrench, Eye, MessageSquare, Filter, SortAsc, SortDesc, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -413,10 +413,18 @@ export default function DashboardPage() {
                           <span className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${
                             ticket.tipo === 'bug' 
                               ? 'bg-red-100 text-red-700' 
-                              : 'bg-blue-100 text-blue-700'
+                              : ticket.tipo === 'melhoria'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-purple-100 text-purple-700'
                           }`}>
-                            {ticket.tipo === 'bug' ? <Bug className="h-3 w-3" aria-hidden="true" /> : <Sparkles className="h-3 w-3" aria-hidden="true" />}
-                            {ticket.tipo === 'bug' ? 'Bug' : 'Melhoria'}
+                            {ticket.tipo === 'bug' ? (
+                              <Bug className="h-3 w-3" aria-hidden="true" />
+                            ) : ticket.tipo === 'melhoria' ? (
+                              <Sparkles className="h-3 w-3" aria-hidden="true" />
+                            ) : (
+                              <Wrench className="h-3 w-3" aria-hidden="true" />
+                            )}
+                            {ticket.tipo === 'bug' ? 'Bug' : ticket.tipo === 'melhoria' ? 'Melhoria' : 'Infra'}
                           </span>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
