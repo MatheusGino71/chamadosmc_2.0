@@ -208,8 +208,6 @@ export default function NovoChamadoPage() {
     // Valida descrição
     if (!formData.descricao.trim()) {
       newErrors.descricao = 'A descrição é obrigatória';
-    } else if (formData.descricao.trim().length < 200) {
-      newErrors.descricao = `A descrição deve ter no mínimo 200 caracteres (atual: ${formData.descricao.trim().length})`;
     }
 
     // Valida URL
@@ -627,10 +625,8 @@ export default function NovoChamadoPage() {
                 }`}
                 placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..."
               />
-              <p className={`text-xs mt-1 ${
-                formData.descricao.length < 200 ? 'text-gray-500' : 'text-green-600'
-              }`}>
-                {formData.descricao.length}/200 caracteres mínimos
+              <p className="text-xs mt-1 text-gray-500">
+                {formData.descricao.length} caracteres
               </p>
               {errors.descricao && (
                 <p className="text-red-600 text-sm mt-1">{errors.descricao}</p>
