@@ -20,9 +20,11 @@ export interface Ticket {
   tipoSolicitacao?: string; // 'Solicitar uma Base' ou 'Criação de conta' ou subtipos de INFRA
   subtipoInfra?: string; // 'Solicitar aparelho/máquina' ou 'Suporte'
   cpf?: string; // CPF para criação de conta
-  imageBase64?: string;
+  imageBase64?: string; // Deprecated: usado em chamados antigos
+  imageUrl?: string; // URL da imagem no Firebase Storage
   url?: string;
-  documentBase64?: string;
+  documentBase64?: string; // Deprecated: usado em chamados antigos
+  documentUrl?: string; // URL do documento no Firebase Storage
   documentName?: string;
   userId: string;
   userName: string;

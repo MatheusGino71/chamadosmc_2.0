@@ -350,12 +350,12 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               </div>
 
               {/* Imagem */}
-              {ticket.imageBase64 && (
+              {(ticket.imageUrl || ticket.imageBase64) && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Imagem Anexada</h3>
                   <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200">
                     <Image
-                      src={ticket.imageBase64}
+                      src={ticket.imageUrl || ticket.imageBase64}
                       alt="Anexo do chamado"
                       fill
                       sizes="(max-width: 768px) 100vw, 800px"
@@ -381,7 +381,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               )}
 
               {/* Documento */}
-              {ticket.documentBase64 && ticket.documentName && (
+              {(ticket.documentUrl || ticket.documentBase64) && ticket.documentName && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Documento Anexado</h3>
                   <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -394,13 +394,23 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                       <p className="text-sm font-medium text-gray-900">{ticket.documentName}</p>
                       <p className="text-xs text-gray-500">Documento anexado ao chamado</p>
                     </div>
-                    <a
-                      href={ticket.documentBase64}
-                      download={ticket.documentName}
-                      className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-md transition-colors"
-                    >
-                      Baixar
-                    </a>
+                    <div className="flex gap-2">
+                      <a
+                        href={ticket.documentUrl || ticket.documentBase64}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-md transition-colors"
+                      >
+                        Ver
+                      </a>
+                      <a
+                        href={ticket.documentUrl || ticket.documentBase64}
+                        download={ticket.documentName}
+                        className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-md transition-colors"
+                      >
+                        Baixar
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}

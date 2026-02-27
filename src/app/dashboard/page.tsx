@@ -454,10 +454,10 @@ export default function DashboardPage() {
                           </a>
                         )}
                       </div>
-                      {ticket.imageBase64 && (
+                      {(ticket.imageUrl || ticket.imageBase64) && (
                         <div className="relative w-full sm:w-32 h-32 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                           <Image
-                            src={ticket.imageBase64}
+                            src={ticket.imageUrl || ticket.imageBase64}
                             alt={`Imagem do chamado ${ticket.ticketId}`}
                             fill
                             sizes="128px"
