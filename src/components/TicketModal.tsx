@@ -355,7 +355,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Imagem Anexada</h3>
                   <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200">
                     <Image
-                      src={ticket.imageUrl || ticket.imageBase64}
+                      src={(ticket.imageUrl || ticket.imageBase64) as string}
                       alt="Anexo do chamado"
                       fill
                       sizes="(max-width: 768px) 100vw, 800px"
