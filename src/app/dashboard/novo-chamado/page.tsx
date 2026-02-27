@@ -1,5 +1,8 @@
 'use client';
 
+// VERSÃO: 2.1 - STORAGE FIX - 27/02/2026 18:45
+// Esta versão usa Firebase Storage para imagens e documentos (não base64)
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,9 +47,10 @@ interface FieldErrors {
 }
 
 export default function NovoChamadoPage() {
-  // Log de versão para debug de cache
-  console.log('🔥 VERSÃO DA PÁGINA: v2.0-storage-fix-2026-02-27-18:30');
-  console.log('✅ Usando Firebase Storage (não base64)');
+  // VERIFICAÇÃO DE VERSÃO - Se não aparecer este log, o cache não foi limpo!
+  console.log('%c🔥 VERSÃO 2.1 - STORAGE FIX ATIVA 🔥', 'color: #00ff00; font-size: 20px; font-weight: bold;');
+  console.log('%c✅ Esta versão USA Firebase Storage (NÃO base64)', 'color: #00ff00; font-size: 16px;');
+  console.log('%c❌ Se aparecer erro de "documentBase64", limpe o cache!', 'color: #ff0000; font-size: 16px;');
   
   const { user } = useAuth();
   const router = useRouter();

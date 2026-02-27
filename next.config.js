@@ -26,6 +26,16 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // Não cachear páginas do dashboard
+        source: '/dashboard/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
     ];
   },
 }
