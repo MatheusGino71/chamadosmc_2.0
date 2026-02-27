@@ -44,6 +44,10 @@ interface FieldErrors {
 }
 
 export default function NovoChamadoPage() {
+  // Log de versão para debug de cache
+  console.log('🔥 VERSÃO DA PÁGINA: v2.0-storage-fix-2026-02-27-18:30');
+  console.log('✅ Usando Firebase Storage (não base64)');
+  
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
