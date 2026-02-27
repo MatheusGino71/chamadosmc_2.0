@@ -258,9 +258,12 @@ export default function NovoChamadoPage() {
 
     try {
       // Gera ID único do chamado
+      console.log('Gerando ticket ID...');
       const ticketId = await generateTicketId();
+      console.log('Ticket ID gerado:', ticketId);
 
       // Cria o chamado no Firestore
+      console.log('Criando chamado no Firestore...');
       await addDoc(collection(db, 'tickets'), {
         ticketId,
         titulo: formData.titulo,
@@ -284,12 +287,26 @@ export default function NovoChamadoPage() {
         updatedAt: new Date(),
       });
 
+      console.log('Chamado criado com sucesso!');
       toast.success('Chamado criado com sucesso!');
       // Redireciona para o dashboard
       router.push('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao criar chamado:', err);
-      const errorMsg = 'Erro ao criar chamado. Tente novamente.';
+      console.error('Código do erro:', err?.code);
+      console.error('Mensagem do erro:', err?.message);
+      
+      // Mensagem de erro mais detalhada
+      let errorMsg = 'Erro ao criar chamado. Tente novamente.';
+      
+      if (err?.message?.includes('index')) {
+        errorMsg = 'Erro de configuração do banco de dados. Contate o administrador.';
+      } else if (err?.message?.includes('permission') || err?.code === 'permission-denied') {
+        errorMsg = 'Você não tem permissão para criar chamados. Contate o administrador.';
+      } else if (err?.code === 'unavailable') {
+        errorMsg = 'Sem conexão com o servidor. Verifique sua internet.';
+      }
+      
       setError(errorMsg);
       toast.error(errorMsg);
       setLoading(false);
