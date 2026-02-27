@@ -381,7 +381,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               )}
 
               {/* Documento */}
-              {(ticket.documentUrl || ticket.documentBase64) && ticket.documentName && (
+              {ticket.documentName && (ticket.documentUrl || ticket.documentBase64) && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Documento Anexado</h3>
                   <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -401,7 +401,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-md transition-colors"
                       >
-                        Ver
+                        Ver PDF
                       </a>
                       <a
                         href={ticket.documentUrl || ticket.documentBase64}
