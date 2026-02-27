@@ -1,10 +1,12 @@
 'use client';
 
+// VERSÃO 2.1 - MODAL COM FIREBASE STORAGE
 import { useState } from 'react';
 import { X, Upload, Link as LinkIcon, Bug, Sparkles, Wrench, Loader, UserCog } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { generateTicketId } from '@/lib/ticketId';
+import { uploadTicketImage, uploadTicketDocument } from '@/lib/storage';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
@@ -69,9 +71,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     url: '',
     tipo: '' as 'bug' | 'melhoria' | 'infra' | '',
   });
-  const [imageBase64, setImageBase64] = useState<string>('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
-  const [documentBase64, setDocumentBase64] = useState<string>('');
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState<string>('');
   const [showBugModal, setShowBugModal] = useState(false);
   const [showMelhoriaModal, setShowMelhoriaModal] = useState(false);
@@ -97,16 +99,15 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         return;
       }
       
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('A imagem deve ter no máximo 2MB');
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('A imagem deve ter no máximo 5MB');
         return;
       }
 
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImageBase64(base64String);
-        setImagePreview(base64String);
+        setImagePreview(reader.result as string);
         // Limpa erro de imagem quando uma imagem é selecionada
         if (errors.imageBase64) {
           setErrors({ ...errors, imageBase64: undefined });
@@ -117,15 +118,15 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
   };
 
   const removeImage = () => {
-    setImageBase64('');
+    setImageFile(null);
     setImagePreview('');
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('O documento deve ter no máximo 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('O documento deve ter no máximo 10MB');
         return;
       }
 
@@ -143,18 +144,13 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setDocumentBase64(base64String);
-        setDocumentName(file.name);
-      };
-      reader.readAsDataURL(file);
+      setDocumentFile(file);
+      setDocumentName(file.name);
     }
   };
 
   const removeDocument = () => {
-    setDocumentBase64('');
+    setDocumentFile(null);
     setDocumentName('');
   };
 
@@ -219,7 +215,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     }
 
     // Valida imagem
-    if (!imageBase64) {
+    if (!imageFile) {
       newErrors.imageBase64 = 'A imagem é obrigatória';
     }
 
@@ -254,6 +250,18 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     try {
       const ticketId = await generateTicketId();
 
+      // Upload da imagem para o Storage
+      let imageUrl = '';
+      if (imageFile) {
+        imageUrl = await uploadTicketImage(imageFile, ticketId);
+      }
+
+      // Upload do documento para o Storage (se houver)
+      let documentUrl = '';
+      if (documentFile) {
+        documentUrl = await uploadTicketDocument(documentFile, ticketId);
+      }
+
       await addDoc(collection(db, 'tickets'), {
         ticketId,
         titulo: formData.titulo,
@@ -265,9 +273,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         subtipoInfra: formData.subtipoInfra || '',
         cpf: formData.cpf || '',
         email: formData.email || '',
-        imageBase64: imageBase64 || '',
+        imageUrl: imageUrl,
         url: formData.url || '',
-        documentBase64: documentBase64 || '',
+        documentUrl: documentUrl,
         documentName: documentName || '',
         userId,
         userName: userName || '',
@@ -292,9 +300,9 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         url: '',
         tipo: '',
       });
-      setImageBase64('');
+      setImageFile(null);
       setImagePreview('');
-      setDocumentBase64('');
+      setDocumentFile(null);
       setDocumentName('');
       
       onClose();
