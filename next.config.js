@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Força rebuild completo
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
+  },
   images: {
     remotePatterns: [
       {
