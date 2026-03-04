@@ -77,6 +77,8 @@ export default function DashboardPage() {
               ...data,
               createdAt: data.createdAt?.toDate() || new Date(),
               updatedAt: data.updatedAt?.toDate() || new Date(),
+              closedAt: data.closedAt?.toDate() || undefined,
+              archivedAt: data.archivedAt?.toDate() || undefined,
             } as Ticket;
           });
           

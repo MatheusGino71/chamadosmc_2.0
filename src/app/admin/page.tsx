@@ -140,6 +140,22 @@ export default function AdminPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Executa arquivamento automático a cada 1 hora
+  useEffect(() => {
+    const archiveInterval = setInterval(async () => {
+      try {
+        const count = await autoArchiveOldTickets();
+        if (count > 0) {
+          console.log(`${count} chamado(s) arquivado(s) automaticamente (execução periódica)`);
+        }
+      } catch (error) {
+        console.error('Erro no arquivamento automático periódico:', error);
+      }
+    }, 3600000); // 1 hora em milissegundos
+
+    return () => clearInterval(archiveInterval);
+  }, []);
+
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
 
@@ -158,6 +174,8 @@ export default function AdminPage() {
               ...data,
               createdAt: data.createdAt?.toDate() || new Date(),
               updatedAt: data.updatedAt?.toDate() || new Date(),
+              closedAt: data.closedAt?.toDate() || undefined,
+              archivedAt: data.archivedAt?.toDate() || undefined,
             } as Ticket;
           });
           
@@ -898,9 +916,15 @@ export default function AdminPage() {
 
                                   {/* Contador de Tempo em Aberto ou Tempo de Resolução */}
                                   {ticket.status === 'fechado' && ticket.closedAt ? (
-                                    <div className="flex items-center gap-2 text-xs text-green-600 font-medium mb-3 pb-3 border-b border-gray-200 bg-green-50 px-2 py-1 rounded">
-                                      <Clock className="h-3 w-3" />
-                                      <span>Resolvido em {getResolutionTime(ticket.createdAt, ticket.closedAt)}</span>
+                                    <div className="space-y-2 mb-3 pb-3 border-b border-gray-200">
+                                      <div className="flex items-center gap-2 text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                                        <Clock className="h-3 w-3" />
+                                        <span>Resolvido em {getResolutionTime(ticket.createdAt, ticket.closedAt)}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-xs text-gray-600 px-2">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>Finalizado em {format(ticket.closedAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                                      </div>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-2 text-xs text-orange-600 font-medium mb-3 pb-3 border-b border-gray-200 bg-orange-50 px-2 py-1 rounded">
