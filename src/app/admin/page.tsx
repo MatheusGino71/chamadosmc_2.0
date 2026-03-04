@@ -7,7 +7,8 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'f
 import { db } from '@/lib/firebase';
 import { Ticket, User } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore } from 'lucide-react';
+import { autoArchiveOldTickets, unarchiveTicket } from '@/lib/archiveTickets';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -62,9 +63,28 @@ export default function AdminPage() {
   const [filterResponsavel, setFilterResponsavel] = useState<string>('all'); // Novo filtro
   const [filterTicketId, setFilterTicketId] = useState<string>(''); // Filtro por ID
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'active' | 'archived'>('active'); // Modo de visualização
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Arquivamento automático ao carregar a página
+  useEffect(() => {
+    const archiveOld = async () => {
+      try {
+        const count = await autoArchiveOldTickets();
+        if (count > 0) {
+          toast.success(`${count} chamado(s) arquivado(s) automaticamente`);
+        }
+      } catch (error) {
+        console.error('Erro no arquivamento automático:', error);
+      }
+    };
+
+    // Executa o arquivamento após 2 segundos
+    const timer = setTimeout(archiveOld, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -237,8 +257,26 @@ export default function AdminPage() {
     toast.success('ID copiado!');
   };
 
+  const handleUnarchiveTicket = async (ticketId: string) => {
+    try {
+      await unarchiveTicket(ticketId);
+      toast.success('Chamado desarquivado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao desarquivar:', error);
+      toast.error('Erro ao desarquivar chamado');
+    }
+  };
+
   // Lógica de filtros
   const filteredTickets = tickets.filter((ticket) => {
+    // Filtro por modo de visualização (ativos/arquivados)
+    if (viewMode === 'active' && ticket.archived === true) {
+      return false;
+    }
+    if (viewMode === 'archived' && ticket.archived !== true) {
+      return false;
+    }
+
     // Filtro por ID
     if (filterTicketId && !ticket.ticketId.toLowerCase().includes(filterTicketId.toLowerCase())) {
       return false;
@@ -369,16 +407,46 @@ export default function AdminPage() {
       {/* Filtros */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-              aria-expanded={showFilters}
-              aria-controls="admin-filters"
-            >
-              <Filter className="h-4 w-4" />
-              {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-            </button>
+          <div className="flex items-center justify-between mb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                aria-expanded={showFilters}
+                aria-controls="admin-filters"
+              >
+                <Filter className="h-4 w-4" />
+                {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+              </button>
+              
+              {/* Switch Ativos/Arquivados */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('active')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-medium ${
+                    viewMode === 'active' 
+                      ? 'bg-white text-primary-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  aria-pressed={viewMode === 'active'}
+                >
+                  <Eye className="h-4 w-4" />
+                  Ativos
+                </button>
+                <button
+                  onClick={() => setViewMode('archived')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-medium ${
+                    viewMode === 'archived' 
+                      ? 'bg-white text-primary-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  aria-pressed={viewMode === 'archived'}
+                >
+                  <Archive className="h-4 w-4" />
+                  Arquivados
+                </button>
+              </div>
+            </div>
             {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId) && (
               <button
                 onClick={clearFilters}
@@ -522,6 +590,97 @@ export default function AdminPage() {
       {loading ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <AdminSkeleton />
+        </div>
+      ) : viewMode === 'archived' ? (
+        /* Visualização de Arquivados */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Archive className="h-5 w-5" />
+                Chamados Arquivados
+                <span className="ml-2 text-sm font-normal text-gray-600">
+                  ({filteredTickets.length} {filteredTickets.length === 1 ? 'chamado' : 'chamados'})
+                </span>
+              </h2>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {filteredTickets.length === 0 ? (
+                <div className="p-12 text-center text-gray-500">
+                  <Archive className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>Nenhum chamado arquivado encontrado</p>
+                </div>
+              ) : (
+                filteredTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <button
+                            onClick={() => copyTicketId(ticket.ticketId)}
+                            className="text-sm font-mono font-semibold text-primary-600 hover:text-primary-700 hover:underline cursor-pointer"
+                            title="Clique para copiar o ID"
+                          >
+                            {ticket.ticketId}
+                          </button>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                            ticket.status === 'fechado' ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {ticket.status === 'aberto' && 'Aberto'}
+                            {ticket.status === 'em-andamento' && 'Em Andamento'}
+                            {ticket.status === 'resolvido' && 'Resolvido'}
+                            {ticket.status === 'fechado' && 'Fechado'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Arquivado em {format(ticket.archivedAt || new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-medium text-gray-900 mb-1 truncate">
+                          {ticket.titulo}
+                        </h3>
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                          {ticket.descricao}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" />
+                            {ticket.sistema}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <UserIcon className="h-3 w-3" />
+                            {ticket.setor}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(ticket.createdAt, "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenTicket(ticket)}
+                          className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleUnarchiveTicket(ticket.id)}
+                          className="px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition flex items-center gap-1"
+                          title="Desarquivar chamado"
+                        >
+                          <ArchiveRestore className="h-4 w-4" />
+                          Desarquivar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         <>

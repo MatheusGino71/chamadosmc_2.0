@@ -34,6 +34,8 @@ export interface Ticket {
   createdAt: Date;
   updatedAt: Date;
   closedAt?: Date;
+  archived?: boolean; // Indica se o chamado está arquivado
+  archivedAt?: Date; // Data em que foi arquivado
 }
 
 export interface ChatMessage {
