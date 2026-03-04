@@ -267,6 +267,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         titulo: formData.titulo,
         descricao: formData.descricao,
         tipo: formData.tipo,
+        priority: 'media' as const, // Prioridade padrão
         setor: formData.setor,
         sistema: formData.sistema,
         tipoSolicitacao: formData.tipoSolicitacao || '',

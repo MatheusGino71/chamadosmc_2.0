@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Ticket, ChatMessage, User } from '@/types';
-import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2, Users, Maximize2 } from 'lucide-react';
+import { Ticket, ChatMessage, User, Priority, PRIORITY_CONFIG } from '@/types';
+import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2, Users, Maximize2, AlertCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -35,7 +35,9 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   const [sending, setSending] = useState(false);
   const [sendingInternal, setSendingInternal] = useState(false);
   const [assignedTo, setAssignedTo] = useState(ticket.assignedTo || '');
+  const [priority, setPriority] = useState<Priority>(ticket.priority || 'media');
   const [updatingAssignment, setUpdatingAssignment] = useState(false);
+  const [updatingPriority, setUpdatingPriority] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -233,6 +235,30 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
     }
   };
 
+  const handleUpdatePriority = async (newPriority: Priority) => {
+    if (!user || user.role !== 'admin') return;
+    if (updatingPriority) return;
+
+    setUpdatingPriority(true);
+
+    try {
+      const ticketRef = doc(db, 'tickets', ticket.id);
+
+      await updateDoc(ticketRef, {
+        priority: newPriority,
+        updatedAt: new Date(),
+      });
+
+      setPriority(newPriority);
+      toast.success('Prioridade atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar prioridade:', error);
+      toast.error('Erro ao atualizar prioridade');
+    } finally {
+      setUpdatingPriority(false);
+    }
+  };
+
   const handleDeleteTicket = async () => {
     if (!user) return;
 
@@ -296,7 +322,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-2xl font-bold text-gray-900">{ticket.titulo}</h2>
               <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${
                 ticket.tipo === 'bug' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
@@ -306,6 +332,10 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               </span>
               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusLabels[ticket.status].color}`}>
                 {statusLabels[ticket.status].label}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${PRIORITY_CONFIG[priority].color}`}>
+                <AlertCircle className="h-3 w-3" />
+                {PRIORITY_CONFIG[priority].label}
               </span>
             </div>
             <p className="text-sm text-gray-600 mt-1 font-mono font-bold">{ticket.ticketId}</p>
@@ -457,6 +487,55 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                   <p className="text-xs text-indigo-600 mt-2">
                     {assignedTo ? `Atribuído a: ${admins.find(a => a.uid === assignedTo)?.nome}` : 'Nenhum administrador responsável por este chamado'}
                   </p>
+                </div>
+              )}
+
+              {/* Prioridade (apenas para admins) */}
+              {user?.role === 'admin' && (
+                <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                  <h3 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Prioridade do Chamado
+                  </h3>
+                  <select
+                    value={priority}
+                    onChange={(e) => handleUpdatePriority(e.target.value as Priority)}
+                    disabled={updatingPriority}
+                    className="w-full px-3 py-2 border border-amber-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="urgente">🔴 Urgente (1 dia)</option>
+                    <option value="alta">🟠 Alta (2 dias)</option>
+                    <option value="media">🟡 Média (4 dias)</option>
+                    <option value="baixa">🟢 Baixa (7 dias)</option>
+                  </select>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${PRIORITY_CONFIG[priority].color}`}>
+                      {PRIORITY_CONFIG[priority].label}
+                    </span>
+                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Prazo: {PRIORITY_CONFIG[priority].days} {PRIORITY_CONFIG[priority].days === 1 ? 'dia' : 'dias'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Visualização de Prioridade (para usuários) */}
+              {user?.role !== 'admin' && (
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Prioridade
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${PRIORITY_CONFIG[priority].color}`}>
+                      {PRIORITY_CONFIG[priority].label}
+                    </span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      Prazo: {PRIORITY_CONFIG[priority].days} {PRIORITY_CONFIG[priority].days === 1 ? 'dia' : 'dias'}
+                    </span>
+                  </div>
                 </div>
               )}
 

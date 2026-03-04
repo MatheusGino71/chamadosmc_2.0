@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Ticket, User } from '@/types';
+import { Ticket, User, PRIORITY_CONFIG } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore, AlertCircle } from 'lucide-react';
 import { autoArchiveOldTickets, unarchiveTicket } from '@/lib/archiveTickets';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,6 +32,59 @@ const getResolutionTime = (createdAt: Date, closedAt: Date): string => {
   if (minutes < 60) return `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
   if (hours < 24) return `${hours} hora${hours !== 1 ? 's' : ''}`;
   return `${days} dia${days !== 1 ? 's' : ''}`;
+};
+
+// Função para calcular status do prazo baseado na prioridade
+const getDeadlineStatus = (ticket: Ticket): { status: 'vencido' | 'proximo' | 'dentro', message: string, color: string } => {
+  // Se o ticket já foi fechado, não mostra prazo
+  if (ticket.status === 'fechado') {
+    return { status: 'dentro', message: '', color: '' };
+  }
+
+  const priority = ticket.priority || 'media';
+  const deadlineDays = PRIORITY_CONFIG[priority].days;
+  const createdAt = ticket.createdAt;
+  const now = new Date();
+  const daysPassed = differenceInDays(now, createdAt);
+  const daysRemaining = deadlineDays - daysPassed;
+
+  if (daysRemaining < 0) {
+    // Vencido
+    const daysOverdue = Math.abs(daysRemaining);
+    return {
+      status: 'vencido',
+      message: `Vencido há ${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'}`,
+      color: 'bg-red-100 text-red-700 border-red-300'
+    };
+  } else if (daysRemaining === 0) {
+    // Vence hoje
+    return {
+      status: 'proximo',
+      message: 'Vence hoje!',
+      color: 'bg-orange-100 text-orange-700 border-orange-300'
+    };
+  } else if (daysRemaining === 1) {
+    // Vence amanhã
+    return {
+      status: 'proximo',
+      message: 'Vence amanhã',
+      color: 'bg-yellow-100 text-yellow-700 border-yellow-300'
+    };
+  } else if (daysRemaining <= 2) {
+    // Próximo do vencimento (2 dias ou menos)
+    return {
+      status: 'proximo',
+      message: `${daysRemaining} dias restantes`,
+      color: 'bg-yellow-100 text-yellow-700 border-yellow-300'
+    };
+  } else {
+    // Dentro do prazo
+    return {
+      status: 'dentro',
+      message: `${daysRemaining} dias restantes`,
+      color: 'bg-blue-100 text-blue-700 border-blue-300'
+    };
+  }
 };
 
 const columns = [
@@ -786,7 +839,7 @@ export default function AdminPage() {
                                   </div>
 
                                   {/* Badge de Tipo */}
-                                  <div className="mb-3">
+                                  <div className="mb-3 flex flex-wrap items-center gap-2">
                                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${
                                       ticket.tipo === 'bug' 
                                         ? 'bg-red-100 text-red-700' 
@@ -802,6 +855,11 @@ export default function AdminPage() {
                                         <Wrench className="h-3 w-3" />
                                       )}
                                       {ticket.tipo === 'bug' ? 'Bug' : ticket.tipo === 'melhoria' ? 'Melhoria' : 'Infra'}
+                                    </span>
+                                    {/* Badge de Prioridade */}
+                                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${PRIORITY_CONFIG[ticket.priority || 'media'].color}`}>
+                                      <AlertCircle className="h-3 w-3" />
+                                      {PRIORITY_CONFIG[ticket.priority || 'media'].label}
                                     </span>
                                   </div>
 
@@ -823,6 +881,20 @@ export default function AdminPage() {
                                       <span className="font-medium">Responsável: {ticket.assignedToName}</span>
                                     </div>
                                   )}
+
+                                  {/* Indicador de Prazo */}
+                                  {ticket.status !== 'fechado' && (() => {
+                                    const deadline = getDeadlineStatus(ticket);
+                                    if (deadline.message) {
+                                      return (
+                                        <div className={`flex items-center gap-2 text-xs font-medium mb-2 px-2 py-1 rounded border ${deadline.color}`}>
+                                          <Clock className="h-3 w-3" />
+                                          <span>{deadline.message}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
 
                                   {/* Contador de Tempo em Aberto ou Tempo de Resolução */}
                                   {ticket.status === 'fechado' && ticket.closedAt ? (

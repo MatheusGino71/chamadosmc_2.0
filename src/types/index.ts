@@ -8,12 +8,22 @@ export interface User {
   createdAt: Date;
 }
 
+export type Priority = 'urgente' | 'alta' | 'media' | 'baixa';
+
+export const PRIORITY_CONFIG = {
+  urgente: { label: 'Urgente', days: 1, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
+  alta: { label: 'Alta', days: 2, color: 'bg-orange-100 text-orange-700', borderColor: 'border-orange-500' },
+  media: { label: 'Média', days: 4, color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-500' },
+  baixa: { label: 'Baixa', days: 7, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
+} as const;
+
 export interface Ticket {
   id: string;
   ticketId: string; // ID único formatado (CHM-2026-0001)
   titulo: string;
   descricao: string;
   tipo: 'bug' | 'melhoria' | 'infra';
+  priority: Priority; // Prioridade do chamado (apenas admin pode alterar)
   status: 'aberto' | 'em-andamento' | 'resolvido' | 'fechado';
   setor: string;
   sistema: string;
