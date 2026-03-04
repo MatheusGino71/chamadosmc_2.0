@@ -82,5 +82,18 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+    
+    // Regras para contadores de IDs (garantir IDs únicos)
+    match /counters/{counterId} {
+      // Usuários autenticados podem ler contadores
+      allow read: if request.auth != null;
+      
+      // Apenas usuários autenticados podem criar/atualizar contadores (via transação)
+      allow create, update: if request.auth != null;
+      
+      // Apenas admins podem deletar contadores
+      allow delete: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
   }
 }
