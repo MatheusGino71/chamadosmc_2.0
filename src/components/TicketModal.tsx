@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Ticket, ChatMessage, User } from '@/types';
-import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2 } from 'lucide-react';
+import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2, Users, Maximize2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -29,14 +29,19 @@ const statusLabels = {
 export default function TicketModal({ ticket, onClose, admins = [], onDelete }: TicketModalProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [newInternalMessage, setNewInternalMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendingInternal, setSendingInternal] = useState(false);
   const [assignedTo, setAssignedTo] = useState(ticket.assignedTo || '');
   const [updatingAssignment, setUpdatingAssignment] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
+  const internalMessagesEndRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'details' | 'chat' | 'internalChat'>('details');
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -82,10 +87,61 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
     };
   }, [ticket.id]);
 
+  // Listener para mensagens do chat interno (apenas para admins)
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+
+    let unsubscribe: (() => void) | null = null;
+
+    const internalMessagesRef = collection(db, 'tickets', ticket.id, 'internalMessages');
+    const q = query(internalMessagesRef, orderBy('createdAt', 'asc'));
+
+    try {
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const messagesData = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate() || new Date(),
+            } as ChatMessage;
+          });
+          
+          setInternalMessages(messagesData);
+        },
+        (error) => {
+          console.error('Erro ao buscar mensagens internas:', error);
+          if (error.code !== 'cancelled') {
+            toast.error('Erro ao carregar mensagens internas');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Erro ao configurar listener de mensagens internas:', error);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Erro ao cancelar listener:', error);
+        }
+      }
+    };
+  }, [ticket.id, user?.role]);
+
   useEffect(() => {
     // Scroll automático para última mensagem
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    // Scroll automático para última mensagem interna
+    internalMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [internalMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +173,38 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
       }
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSendInternalMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newInternalMessage.trim() || !user || user.role !== 'admin') return;
+
+    setSendingInternal(true);
+
+    try {
+      const internalMessagesRef = collection(db, 'tickets', ticket.id, 'internalMessages');
+      await addDoc(internalMessagesRef, {
+        senderId: user.uid,
+        senderName: user.nome,
+        senderRole: user.role,
+        message: newInternalMessage.trim(),
+        createdAt: new Date(),
+      });
+
+      setNewInternalMessage('');
+      toast.success('Mensagem interna enviada!');
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem interna:', error);
+      
+      if (error?.code === 'permission-denied') {
+        toast.error('Erro de permissão. Verifique as regras do Firestore.');
+      } else {
+        toast.error('Erro ao enviar mensagem interna: ' + (error?.message || 'Tente novamente.'));
+      }
+    } finally {
+      setSendingInternal(false);
     }
   };
 
@@ -166,6 +254,16 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
       );
       
       await Promise.all(deleteMessagesPromises);
+
+      // Excluir todas as mensagens internas
+      const internalMessagesRef = collection(db, 'tickets', ticket.id, 'internalMessages');
+      const internalMessagesSnapshot = await getDocs(internalMessagesRef);
+      
+      const deleteInternalMessagesPromises = internalMessagesSnapshot.docs.map(msg => 
+        deleteDoc(doc(db, 'tickets', ticket.id, 'internalMessages', msg.id))
+      );
+      
+      await Promise.all(deleteInternalMessagesPromises);
 
       // Excluir o chamado
       await deleteDoc(doc(db, 'tickets', ticket.id));
@@ -250,6 +348,27 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               )}
             </span>
           </button>
+          {/* Aba de Chat Interno - Apenas para Admins */}
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setActiveTab('internalChat')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition relative ${
+                activeTab === 'internalChat'
+                  ? 'border-b-2 border-emerald-500 text-emerald-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <Users className="h-4 w-4" />
+                Chat Interno
+                {internalMessages.length > 0 && (
+                  <span className="bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {internalMessages.length}
+                  </span>
+                )}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -353,7 +472,8 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               {(ticket.imageUrl || ticket.imageBase64) && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Imagem Anexada</h3>
-                  <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200">
+                  <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200 group cursor-pointer"
+                       onClick={() => setExpandedImage((ticket.imageUrl || ticket.imageBase64) as string)}>
                     <Image
                       src={(ticket.imageUrl || ticket.imageBase64) as string}
                       alt="Anexo do chamado"
@@ -361,6 +481,11 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                       sizes="(max-width: 768px) 100vw, 800px"
                       className="object-contain bg-gray-50"
                     />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3">
+                        <Maximize2 className="h-6 w-6 text-gray-900" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -415,7 +540,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'chat' ? (
             <div className="flex flex-col h-[500px]">
               {/* Mensagens */}
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
@@ -476,6 +601,69 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                 </button>
               </form>
             </div>
+          ) : (
+            /* Chat Interno - Apenas para Admins */
+            <div className="flex flex-col h-[500px]">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-emerald-700 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <strong>Chat Interno:</strong> Visível apenas para administradores. Use para discussões privadas sobre o chamado.
+                </p>
+              </div>
+
+              {/* Mensagens Internas */}
+              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+                {internalMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-emerald-400">
+                    <Users className="h-16 w-16 mb-3" />
+                    <p className="text-sm">Nenhuma mensagem interna ainda</p>
+                    <p className="text-xs">Inicie uma discussão privada entre admins</p>
+                  </div>
+                ) : (
+                  <>
+                    {internalMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className="flex justify-start"
+                      >
+                        <div className="max-w-[70%] rounded-lg p-3 bg-emerald-100 text-emerald-900 border border-emerald-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold">
+                              🛡️ {msg.senderName}
+                            </span>
+                            <span className="text-xs opacity-75">
+                              {format(msg.createdAt, 'HH:mm', { locale: ptBR })}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={internalMessagesEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Input de Mensagem Interna */}
+              <form onSubmit={handleSendInternalMessage} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newInternalMessage}
+                  onChange={(e) => setNewInternalMessage(e.target.value)}
+                  placeholder="Mensagem interna (apenas admins)..."
+                  className="flex-1 px-4 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50"
+                  disabled={sendingInternal}
+                />
+                <button
+                  type="submit"
+                  disabled={sendingInternal || !newInternalMessage.trim()}
+                  className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  Enviar
+                </button>
+              </form>
+            </div>
           )}
         </div>
 
@@ -502,6 +690,34 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
           </div>
         </div>
       </div>
+
+      {/* Modal de Imagem Ampliada */}
+      {expandedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-[99999] flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setExpandedImage(null)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedImage(null);
+            }}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition z-10 bg-black bg-opacity-50 rounded-full p-2"
+            aria-label="Fechar imagem"
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <div className="relative w-full h-full flex items-center justify-center pointer-events-none">
+            <Image
+              src={expandedImage}
+              alt="Imagem ampliada"
+              fill
+              sizes="100vw"
+              className="object-contain"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Diálogo de Confirmação de Exclusão */}
       <ConfirmDialog

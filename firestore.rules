@@ -43,6 +43,26 @@ service cloud.firestore {
       );
     }
     
+    // Regras para mensagens internas (subcoleção - apenas admins)
+    match /tickets/{ticketId}/internalMessages/{messageId} {
+      // Apenas admins podem ler mensagens internas
+      allow read: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Apenas admins podem criar mensagens internas
+      allow create: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Admins podem atualizar suas próprias mensagens internas
+      allow update: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                      resource.data.senderId == request.auth.uid;
+      
+      // Apenas admins podem deletar mensagens internas
+      allow delete: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     // Regras para usuários
     match /users/{userId} {
       // Usuários autenticados podem ler qualquer perfil (necessário para verificar roles)
