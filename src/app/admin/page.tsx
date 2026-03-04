@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [filterDataInicio, setFilterDataInicio] = useState<string>('');
   const [filterDataFim, setFilterDataFim] = useState<string>('');
   const [filterResponsavel, setFilterResponsavel] = useState<string>('all'); // Novo filtro
+  const [filterTicketId, setFilterTicketId] = useState<string>(''); // Filtro por ID
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -215,10 +216,21 @@ export default function AdminPage() {
     setFilterDataInicio('');
     setFilterDataFim('');
     setFilterResponsavel('all');
+    setFilterTicketId('');
+  };
+
+  const copyTicketId = (ticketId: string) => {
+    navigator.clipboard.writeText(ticketId);
+    toast.success('ID copiado!');
   };
 
   // Lógica de filtros
   const filteredTickets = tickets.filter((ticket) => {
+    // Filtro por ID
+    if (filterTicketId && !ticket.ticketId.toLowerCase().includes(filterTicketId.toLowerCase())) {
+      return false;
+    }
+
     // Filtro por sistema
     if (filterSistema !== 'all' && ticket.sistema !== filterSistema) {
       return false;
@@ -354,7 +366,7 @@ export default function AdminPage() {
               <Filter className="h-4 w-4" />
               {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
             </button>
-            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all') && (
+            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId) && (
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -368,6 +380,20 @@ export default function AdminPage() {
 
           {showFilters && (
             <div id="admin-filters" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg" role="region" aria-label="Filtros de chamados">
+              {/* Filtro por ID */}
+              <div>
+                <label htmlFor="filter-ticket-id" className="block text-xs font-medium text-gray-700 mb-1">ID do Chamado</label>
+                <input
+                  id="filter-ticket-id"
+                  type="text"
+                  value={filterTicketId}
+                  onChange={(e) => setFilterTicketId(e.target.value)}
+                  placeholder="Ex: CHM-2026-0001"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por ID do chamado"
+                />
+              </div>
+
               {/* Filtro de Sistema */}
               <div>
                 <label htmlFor="filter-sistema" className="block text-xs font-medium text-gray-700 mb-1">Sistema</label>
@@ -571,9 +597,16 @@ export default function AdminPage() {
                                 >
                                   {/* Ticket ID */}
                                   <div className="flex items-center justify-between mb-3">
-                                    <div className="font-mono text-sm font-bold text-primary-600">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyTicketId(ticket.ticketId);
+                                      }}
+                                      className="font-mono text-sm font-bold text-primary-600 hover:text-primary-700 hover:underline cursor-pointer transition"
+                                      title="Clique para copiar o ID"
+                                    >
                                       {ticket.ticketId}
-                                    </div>
+                                    </button>
                                     <div className="text-gray-400 text-xs flex items-center gap-1">
                                       <span className="text-lg">☰</span>
                                       <span className="hidden sm:inline">Arraste</span>

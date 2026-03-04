@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [ticketIdFilter, setTicketIdFilter] = useState<string>('');
   
   // Paginação
   const [itemsPerPage] = useState(20);
@@ -123,6 +124,14 @@ export default function DashboardPage() {
       );
     }
 
+    // Filtro específico por ID
+    if (ticketIdFilter) {
+      const idLower = ticketIdFilter.toLowerCase();
+      filtered = filtered.filter((ticket) =>
+        ticket.ticketId.toLowerCase().includes(idLower)
+      );
+    }
+
     // Filtro por status
     if (statusFilter !== 'todos') {
       filtered = filtered.filter((ticket) => ticket.status === statusFilter);
@@ -175,6 +184,11 @@ export default function DashboardPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedTicket(null);
+  };
+
+  const copyTicketId = (ticketId: string) => {
+    navigator.clipboard.writeText(ticketId);
+    toast.success('ID copiado!');
   };
 
   const stats = {
@@ -317,7 +331,23 @@ export default function DashboardPage() {
 
                 {/* Filtros */}
                 {showFilters && (
-                  <div id="filters-section" className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t" role="region" aria-label="Filtros de chamados">
+                  <div id="filters-section" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t" role="region" aria-label="Filtros de chamados">
+                    {/* Filtro por ID */}
+                    <div>
+                      <label htmlFor="ticket-id-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                        ID do Chamado
+                      </label>
+                      <input
+                        id="ticket-id-filter"
+                        type="text"
+                        value={ticketIdFilter}
+                        onChange={(e) => setTicketIdFilter(e.target.value)}
+                        placeholder="Ex: CHM-2026-0001"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        aria-label="Filtrar por ID do chamado"
+                      />
+                    </div>
+
                     <div>
                       <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
                         Status
@@ -410,9 +440,16 @@ export default function DashboardPage() {
                     <div className="flex flex-col sm:flex-row gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="font-mono text-sm font-semibold text-primary-600">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyTicketId(ticket.ticketId);
+                            }}
+                            className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline cursor-pointer transition"
+                            title="Clique para copiar o ID"
+                          >
                             {ticket.ticketId}
-                          </span>
+                          </button>
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[ticket.status]}`}>
                             {statusLabels[ticket.status]}
                           </span>
