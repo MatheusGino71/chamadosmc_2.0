@@ -137,6 +137,12 @@ export default function DashboardPage() {
     filtered.sort((a, b) => {
       const timeA = a.createdAt.getTime();
       const timeB = b.createdAt.getTime();
+      
+      // Tickets em 'aberto' sempre do mais antigo para o mais recente
+      if (statusFilter === 'aberto' || (statusFilter === 'todos' && a.status === 'aberto' && b.status === 'aberto')) {
+        return timeA - timeB;
+      }
+      
       return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     });
 

@@ -187,7 +187,15 @@ export default function AdminPage() {
   };
 
   const getTicketsByStatus = (status: string) => {
-    return filteredTickets.filter(ticket => ticket.status === status);
+    const filtered = filteredTickets.filter(ticket => ticket.status === status);
+    
+    // Ordena 'aberto' do mais antigo para o mais recente
+    if (status === 'aberto') {
+      return filtered.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    }
+    
+    // Mantém a ordem padrão para outros status (mais recente primeiro)
+    return filtered;
   };
 
   const handleOpenTicket = (ticket: Ticket) => {
