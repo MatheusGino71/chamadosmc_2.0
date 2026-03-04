@@ -176,7 +176,20 @@ export default function AdminPage() {
       await updateDoc(ticketRef, updateData);
       
       // Mostra mensagem de sucesso com toast
-      toast.success(`Chamado movido para "${columns.find(c => c.id === newStatus)?.title}" com sucesso!`);
+      if (newStatus === 'fechado') {
+        toast.success('🎉 Parabéns campeão, continue assim!', {
+          duration: 5000,
+          style: {
+            background: '#10b981',
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            padding: '16px',
+          },
+        });
+      } else {
+        toast.success(`Chamado movido para "${columns.find(c => c.id === newStatus)?.title}" com sucesso!`);
+      }
     } catch (error) {
       console.error('Erro ao atualizar status do ticket:', error);
       toast.error('Erro ao mover o chamado. Tente novamente.');
