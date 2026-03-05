@@ -95,5 +95,43 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+    
+    // Regras para notificações
+    match /notifications/{notificationId} {
+      // Usuários podem ler suas próprias notificações
+      allow read: if request.auth != null;
+      
+      // Qualquer usuário autenticado pode criar notificações
+      allow create: if request.auth != null &&
+                      request.resource.data.recipientId != null;
+      
+      // Usuários podem atualizar apenas suas próprias notificações (para marcar como lida)
+      allow update: if request.auth != null && 
+                      resource.data.recipientId == request.auth.uid;
+      
+      // Usuários podem deletar suas próprias notificações
+      allow delete: if request.auth != null && 
+                      resource.data.recipientId == request.auth.uid;
+    }
+    
+    // Regras para mensagens entre administradores
+    match /adminMessages/{messageId} {
+      // Admins podem ler mensagens
+      allow read: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Apenas admins podem criar mensagens
+      allow create: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                      request.resource.data.senderId == request.auth.uid;
+      
+      // Apenas admins podem atualizar mensagens
+      allow update: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Remetente e destinatário podem deletar
+      allow delete: if request.auth != null && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
   }
 }

@@ -7,7 +7,7 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'f
 import { db } from '@/lib/firebase';
 import { Ticket, User, PRIORITY_CONFIG } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore, AlertCircle } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore, AlertCircle, Mail } from 'lucide-react';
 import { autoArchiveOldTickets, unarchiveTicket } from '@/lib/archiveTickets';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,6 +17,10 @@ import CreateTicketModal from '@/components/CreateTicketModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { AdminSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import { notifyTicketStatusChanged } from '@/lib/notifications';
+import NotificationCenter from '@/components/NotificationCenter';
+import SendMessageModal from '@/components/SendMessageModal';
+import MessagesInbox from '@/components/MessagesInbox';
 
 // Função para calcular tempo em aberto
 const getTimeOpen = (createdAt: Date): string => {
@@ -104,6 +108,9 @@ export default function AdminPage() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false);
+  const [showMessagesInbox, setShowMessagesInbox] = useState(false);
+  const [openConversationWith, setOpenConversationWith] = useState<{ userId: string; userName: string } | undefined>();
   const [mounted, setMounted] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
@@ -237,6 +244,11 @@ export default function AdminPage() {
     router.push('/login');
   };
 
+  const handleOpenConversation = (senderId: string, senderName: string) => {
+    setOpenConversationWith({ userId: senderId, userName: senderName });
+    setShowMessagesInbox(true);
+  };
+
   const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
@@ -265,6 +277,24 @@ export default function AdminPage() {
       }
       
       await updateDoc(ticketRef, updateData);
+      
+      // Envia notificação para o criador do ticket sobre a mudança de status
+      const ticket = tickets.find(t => t.id === draggableId);
+      if (ticket && user) {
+        try {
+          await notifyTicketStatusChanged(
+            ticket.id,
+            ticket.ticketId,
+            ticket.titulo,
+            newStatus,
+            ticket.userId,
+            user.uid,
+            user.nome
+          );
+        } catch (error) {
+          console.error('Erro ao enviar notificação:', error);
+        }
+      }
       
       // Mostra mensagem de sucesso com toast
       if (newStatus === 'fechado') {
@@ -480,6 +510,37 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-3">
+              {/* Notificações */}
+              {user && (
+                <NotificationCenter 
+                  userId={user.uid} 
+                  onOpenConversation={handleOpenConversation}
+                />
+              )}
+              
+              {/* Botão Ver Mensagens */}
+              <button
+                onClick={() => {
+                  setOpenConversationWith(undefined);
+                  setShowMessagesInbox(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                aria-label="Ver mensagens"
+              >
+                <Mail className="h-4 w-4" />
+                <span className="hidden md:inline">Mensagens</span>
+              </button>
+              
+              {/* Botão Enviar Mensagem */}
+              <button
+                onClick={() => setShowSendMessageModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Enviar mensagem"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden md:inline">Enviar Mensagem</span>
+              </button>
+              
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
@@ -976,6 +1037,29 @@ export default function AdminPage() {
           userEmail={user.email || ''}
           userName={user.nome || ''}
           admins={admins}
+        />
+      )}
+
+      {/* Modal de Enviar Mensagem */}
+      {user && (
+        <SendMessageModal
+          isOpen={showSendMessageModal}
+          onClose={() => setShowSendMessageModal(false)}
+          currentUser={user}
+        />
+      )}
+
+      {/* Modal de Caixa de Entrada de Mensagens */}
+      {user && (
+        <MessagesInbox
+          isOpen={showMessagesInbox}
+          onClose={() => {
+            setShowMessagesInbox(false);
+            setOpenConversationWith(undefined);
+          }}
+          userId={user.uid}
+          userName={user.nome}
+          openConversationWith={openConversationWith}
         />
       )}
 

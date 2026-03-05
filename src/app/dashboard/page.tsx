@@ -17,6 +17,7 @@ import SearchBar from '@/components/SearchBar';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 import { toast } from 'sonner';
+import NotificationCenter from '@/components/NotificationCenter';
 
 const statusColors = {
   'aberto': 'bg-blue-100 text-blue-800',
@@ -226,6 +227,9 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Notificações */}
+              {user && <NotificationCenter userId={user.uid} />}
+              
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
                 <p className="text-xs text-gray-500">{user?.setor}</p>

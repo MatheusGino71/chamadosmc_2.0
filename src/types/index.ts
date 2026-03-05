@@ -72,3 +72,49 @@ export interface RegisterData {
   setor: string;
   cpf?: string;
 }
+
+export type NotificationType = 
+  | 'ticket_assigned'       // Chamado atribuído a um admin
+  | 'ticket_updated'        // Chamado atualizado
+  | 'ticket_message'        // Nova mensagem em um chamado
+  | 'admin_message'         // Mensagem direta de outro admin
+  | 'ticket_status_changed' // Status do chamado alterado
+  | 'ticket_priority_changed'; // Prioridade do chamado alterada
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  recipientId: string;       // UID do destinatário
+  senderId?: string;         // UID do remetente (opcional)
+  senderName?: string;       // Nome do remetente
+  ticketId?: string;         // ID do chamado relacionado (se aplicável)
+  ticketNumber?: string;     // Número formatado do chamado (ex: CHM-2026-0001)
+  read: boolean;             // Se a notificação foi lida
+  createdAt: Date;
+}
+
+export interface AdminMessage {
+  id: string;
+  conversationId: string;    // ID único da conversa (combinação dos IDs ordenados)
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  recipientName: string;
+  subject: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+  readAt?: Date;
+}
+
+export interface Conversation {
+  id: string;                // conversationId
+  participantIds: string[];  // IDs dos participantes
+  participantNames: string[]; // Nomes dos participantes
+  lastMessage: string;       // Última mensagem da conversa
+  lastMessageDate: Date;     // Data da última mensagem
+  unreadCount: number;       // Mensagens não lidas
+  subject: string;           // Assunto da conversa
+}

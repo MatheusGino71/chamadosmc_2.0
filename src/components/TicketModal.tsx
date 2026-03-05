@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import ConfirmDialog from './ConfirmDialog';
+import { notifyNewTicketMessage, notifyTicketAssigned, notifyTicketPriorityChanged } from '@/lib/notifications';
 
 interface TicketModalProps {
   ticket: Ticket;
@@ -162,6 +163,24 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
         createdAt: new Date(),
       });
 
+      // Envia notificação para o destinatário apropriado
+      const recipientId = user.role === 'admin' ? ticket.userId : (ticket.assignedTo || '');
+      if (recipientId && recipientId !== user.uid) {
+        try {
+          await notifyNewTicketMessage(
+            ticket.id,
+            ticket.ticketId,
+            ticket.titulo,
+            recipientId,
+            user.uid,
+            user.nome,
+            newMessage.trim()
+          );
+        } catch (error) {
+          console.error('Erro ao enviar notificação:', error);
+        }
+      }
+
       setNewMessage('');
       toast.success('Mensagem enviada!');
     } catch (error: any) {
@@ -225,6 +244,22 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
         updatedAt: new Date(),
       });
 
+      // Envia notificação para o admin atribuído
+      if (newAssignedTo && assignedAdmin) {
+        try {
+          await notifyTicketAssigned(
+            ticket.id,
+            ticket.ticketId,
+            ticket.titulo,
+            newAssignedTo,
+            user.uid,
+            user.nome
+          );
+        } catch (error) {
+          console.error('Erro ao enviar notificação:', error);
+        }
+      }
+
       setAssignedTo(newAssignedTo);
       toast.success(newAssignedTo ? 'Responsável atribuído com sucesso!' : 'Responsável removido com sucesso!');
     } catch (error) {
@@ -248,6 +283,23 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
         priority: newPriority,
         updatedAt: new Date(),
       });
+
+      // Envia notificação para o criador do chamado
+      if (ticket.userId !== user.uid) {
+        try {
+          await notifyTicketPriorityChanged(
+            ticket.id,
+            ticket.ticketId,
+            ticket.titulo,
+            newPriority,
+            ticket.userId,
+            user.uid,
+            user.nome
+          );
+        } catch (error) {
+          console.error('Erro ao enviar notificação:', error);
+        }
+      }
 
       setPriority(newPriority);
       toast.success('Prioridade atualizada com sucesso!');
