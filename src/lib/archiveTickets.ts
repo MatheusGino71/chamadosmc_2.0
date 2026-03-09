@@ -55,6 +55,22 @@ export async function autoArchiveOldTickets(): Promise<number> {
 }
 
 /**
+ * Arquiva um chamado manualmente
+ */
+export async function archiveTicket(ticketId: string): Promise<void> {
+  try {
+    const ticketRef = doc(db, 'tickets', ticketId);
+    await updateDoc(ticketRef, {
+      archived: true,
+      archivedAt: new Date(),
+    });
+  } catch (error) {
+    console.error('Erro ao arquivar chamado:', error);
+    throw error;
+  }
+}
+
+/**
  * Desarquiva um chamado
  */
 export async function unarchiveTicket(ticketId: string): Promise<void> {

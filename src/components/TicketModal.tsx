@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Ticket, ChatMessage, User, Priority, PRIORITY_CONFIG } from '@/types';
-import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2, Users, Maximize2, AlertCircle, Clock } from 'lucide-react';
+import { X, Bug, Sparkles, User as UserIcon, Briefcase, Calendar, Mail, Send, MessageSquare, UserCog, Trash2, Users, Maximize2, AlertCircle, Clock, Archive } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import ConfirmDialog from './ConfirmDialog';
 import { notifyNewTicketMessage, notifyTicketAssigned, notifyTicketPriorityChanged } from '@/lib/notifications';
+import { archiveTicket } from '@/lib/archiveTickets';
 
 interface TicketModalProps {
   ticket: Ticket;
@@ -41,6 +42,8 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   const [updatingPriority, setUpdatingPriority] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const internalMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -308,6 +311,34 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
       toast.error('Erro ao atualizar prioridade');
     } finally {
       setUpdatingPriority(false);
+    }
+  };
+
+  const handleArchiveTicket = async () => {
+    if (!user || user.role !== 'admin') {
+      toast.error('Apenas administradores podem arquivar chamados');
+      return;
+    }
+
+    setArchiving(true);
+
+    try {
+      await archiveTicket(ticket.id);
+      toast.success('Chamado arquivado com sucesso!');
+      
+      // Fechar modal
+      onClose();
+    } catch (error: any) {
+      console.error('Erro ao arquivar chamado:', error);
+      
+      if (error?.code === 'permission-denied') {
+        toast.error('Erro de permissão. Verifique as regras do Firestore.');
+      } else {
+        toast.error('Erro ao arquivar chamado: ' + (error?.message || 'Tente novamente.'));
+      }
+    } finally {
+      setArchiving(false);
+      setShowArchiveDialog(false);
     }
   };
 
@@ -800,17 +831,30 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
 
         {/* Footer */}
         <div className="flex justify-between gap-3 p-6 border-t border-gray-200">
-          {/* Botão de Excluir - mostrado apenas para admin ou dono do chamado */}
-          {(user?.role === 'admin' || user?.uid === ticket.userId) && (
-            <button
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={deleting}
-              className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Excluir Chamado
-            </button>
-          )}
+          <div className="flex gap-3">
+            {/* Botão de Arquivar - mostrado apenas para admin */}
+            {user?.role === 'admin' && !ticket.archived && (
+              <button
+                onClick={() => setShowArchiveDialog(true)}
+                disabled={archiving}
+                className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Archive className="h-4 w-4" />
+                Arquivar Chamado
+              </button>
+            )}
+            {/* Botão de Excluir - mostrado apenas para admin ou dono do chamado */}
+            {(user?.role === 'admin' || user?.uid === ticket.userId) && (
+              <button
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={deleting}
+                className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir Chamado
+              </button>
+            )}
+          </div>
           <div className="flex gap-3 ml-auto">
             <button
               onClick={onClose}
@@ -849,6 +893,18 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
           </div>
         </div>
       )}
+
+      {/* Diálogo de Confirmação de Arquivamento */}
+      <ConfirmDialog
+        isOpen={showArchiveDialog}
+        onClose={() => setShowArchiveDialog(false)}
+        onConfirm={handleArchiveTicket}
+        title="Confirmar Arquivamento"
+        message={`Tem certeza que deseja arquivar o chamado ${ticket.ticketId}? Chamados arquivados podem ser desarquivados posteriormente.`}
+        confirmText="Sim, arquivar"
+        cancelText="Cancelar"
+        variant="warning"
+      />
 
       {/* Diálogo de Confirmação de Exclusão */}
       <ConfirmDialog
