@@ -122,6 +122,7 @@ export default function AdminPage() {
   const [filterDataFim, setFilterDataFim] = useState<string>('');
   const [filterResponsavel, setFilterResponsavel] = useState<string>('all'); // Novo filtro
   const [filterTicketId, setFilterTicketId] = useState<string>(''); // Filtro por ID
+  const [filterPrioridade, setFilterPrioridade] = useState<string>('all'); // Filtro por prioridade
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active'); // Modo de visualização
 
@@ -351,6 +352,7 @@ export default function AdminPage() {
     setFilterDataFim('');
     setFilterResponsavel('all');
     setFilterTicketId('');
+    setFilterPrioridade('all');
   };
 
   const copyTicketId = (ticketId: string) => {
@@ -390,6 +392,11 @@ export default function AdminPage() {
 
     // Filtro por setor
     if (filterSetor !== 'all' && ticket.setor !== filterSetor) {
+      return false;
+    }
+
+    // Filtro por prioridade
+    if (filterPrioridade !== 'all' && ticket.priority !== filterPrioridade) {
       return false;
     }
 
@@ -579,7 +586,7 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
-            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId) && (
+            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId || filterPrioridade !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -656,6 +663,24 @@ export default function AdminPage() {
                   {admins.map((admin) => (
                     <option key={admin.uid} value={admin.uid}>{admin.nome}</option>
                   ))}
+                </select>
+              </div>
+
+              {/* Filtro de Prioridade */}
+              <div>
+                <label htmlFor="filter-prioridade" className="block text-xs font-medium text-gray-700 mb-1">Prioridade</label>
+                <select
+                  id="filter-prioridade"
+                  value={filterPrioridade}
+                  onChange={(e) => setFilterPrioridade(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por prioridade"
+                >
+                  <option value="all">Todas</option>
+                  <option value="urgente">🔴 Urgente</option>
+                  <option value="alta">🟠 Alta</option>
+                  <option value="media">🟡 Média</option>
+                  <option value="baixa">🟢 Baixa</option>
                 </select>
               </div>
 
