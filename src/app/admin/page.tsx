@@ -1037,6 +1037,7 @@ export default function AdminPage() {
           userEmail={user.email || ''}
           userName={user.nome || ''}
           admins={admins}
+          isAdmin={true}
         />
       )}
 

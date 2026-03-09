@@ -22,6 +22,7 @@ interface CreateTicketModalProps {
   userEmail: string;
   userName?: string;
   admins?: User[]; // Lista de admins para atribuir
+  isAdmin?: boolean; // Se true, remove obrigatoriedade dos campos
 }
 
 const setores = [
@@ -56,7 +57,7 @@ interface FieldErrors {
   imageBase64?: string;
 }
 
-export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName, admins = [] }: CreateTicketModalProps) {
+export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, userName, admins = [], isAdmin = false }: CreateTicketModalProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formData, setFormData] = useState({
@@ -157,66 +158,88 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
   const validateForm = (): boolean => {
     const newErrors: FieldErrors = {};
 
-    // Valida título
-    if (!formData.titulo.trim()) {
-      newErrors.titulo = 'O título é obrigatório';
-    } else if (formData.titulo.trim().length < 5) {
-      newErrors.titulo = 'O título deve ter no mínimo 5 caracteres';
-    }
-
-    // Valida tipo
-    if (!formData.tipo) {
-      newErrors.tipo = 'Selecione o tipo (Bug, Melhoria ou Infra)';
-    }
-
-    // Valida subtipo infra se tipo for "infra"
-    if (formData.tipo === 'infra' && !formData.subtipoInfra) {
-      newErrors.subtipoInfra = 'Selecione o subtipo de infraestrutura';
-    }
-
-    // Valida setor
-    if (!formData.setor) {
-      newErrors.setor = 'Selecione um setor';
-    }
-
-    // Valida sistema
-    if (!formData.sistema) {
-      newErrors.sistema = 'Selecione um sistema';
-    }
-
-    // Valida tipo de solicitação se sistema for "Outros"
-    if (formData.sistema === 'Outros' && !formData.tipoSolicitacao) {
-      newErrors.tipoSolicitacao = 'Selecione o tipo de solicitação';
-    }
-
-    // Valida CPF se for criação de conta
-    if (formData.tipoSolicitacao === 'Criação de conta' && formData.sistema === 'Outros') {
-      if (!formData.cpf.trim()) {
-        newErrors.cpf = 'O CPF é obrigatório para criação de conta';
-      } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
+    // Se for admin, não valida obrigatoriedade dos campos
+    if (isAdmin) {
+      // Valida apenas formato se campos foram preenchidos
+      if (formData.titulo.trim() && formData.titulo.trim().length < 5) {
+        newErrors.titulo = 'O título deve ter no mínimo 5 caracteres';
+      }
+      
+      if (formData.cpf.trim() && formData.cpf.replace(/\D/g, '').length !== 11) {
         newErrors.cpf = 'CPF inválido';
       }
-    }
-
-    // Valida descrição
-    if (!formData.descricao.trim()) {
-      newErrors.descricao = 'A descrição é obrigatória';
-    }
-
-    // Valida URL
-    if (!formData.url.trim()) {
-      newErrors.url = 'A URL é obrigatória';
-    } else {
-      try {
-        new URL(formData.url);
-      } catch {
-        newErrors.url = 'URL inválida. Use o formato: https://exemplo.com';
+      
+      if (formData.url.trim()) {
+        try {
+          new URL(formData.url);
+        } catch {
+          newErrors.url = 'URL inválida. Use o formato: https://exemplo.com';
+        }
       }
-    }
+    } else {
+      // Validação completa para usuários comuns
+      
+      // Valida título
+      if (!formData.titulo.trim()) {
+        newErrors.titulo = 'O título é obrigatório';
+      } else if (formData.titulo.trim().length < 5) {
+        newErrors.titulo = 'O título deve ter no mínimo 5 caracteres';
+      }
 
-    // Valida imagem
-    if (!imageFile) {
-      newErrors.imageBase64 = 'A imagem é obrigatória';
+      // Valida tipo
+      if (!formData.tipo) {
+        newErrors.tipo = 'Selecione o tipo (Bug, Melhoria ou Infra)';
+      }
+
+      // Valida subtipo infra se tipo for "infra"
+      if (formData.tipo === 'infra' && !formData.subtipoInfra) {
+        newErrors.subtipoInfra = 'Selecione o subtipo de infraestrutura';
+      }
+
+      // Valida setor
+      if (!formData.setor) {
+        newErrors.setor = 'Selecione um setor';
+      }
+
+      // Valida sistema
+      if (!formData.sistema) {
+        newErrors.sistema = 'Selecione um sistema';
+      }
+
+      // Valida tipo de solicitação se sistema for "Outros"
+      if (formData.sistema === 'Outros' && !formData.tipoSolicitacao) {
+        newErrors.tipoSolicitacao = 'Selecione o tipo de solicitação';
+      }
+
+      // Valida CPF se for criação de conta
+      if (formData.tipoSolicitacao === 'Criação de conta' && formData.sistema === 'Outros') {
+        if (!formData.cpf.trim()) {
+          newErrors.cpf = 'O CPF é obrigatório para criação de conta';
+        } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
+          newErrors.cpf = 'CPF inválido';
+        }
+      }
+
+      // Valida descrição
+      if (!formData.descricao.trim()) {
+        newErrors.descricao = 'A descrição é obrigatória';
+      }
+
+      // Valida URL
+      if (!formData.url.trim()) {
+        newErrors.url = 'A URL é obrigatória';
+      } else {
+        try {
+          new URL(formData.url);
+        } catch {
+          newErrors.url = 'URL inválida. Use o formato: https://exemplo.com';
+        }
+      }
+
+      // Valida imagem
+      if (!imageFile) {
+        newErrors.imageBase64 = 'A imagem é obrigatória';
+      }
     }
 
     setErrors(newErrors);
