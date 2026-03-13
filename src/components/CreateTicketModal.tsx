@@ -71,6 +71,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
     email: '',
     url: '',
     tipo: '' as 'bug' | 'melhoria' | 'infra' | '',
+    estimatedHours: 0,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -327,6 +328,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         userName: userName || '',
         userEmail,
         status: 'aberto',
+        estimatedHours: formData.estimatedHours > 0 ? formData.estimatedHours : null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -345,6 +347,7 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
         email: '',
         url: '',
         tipo: '',
+        estimatedHours: 0,
       });
       setImageFiles([]);
       setImagePreviews([]);
@@ -712,6 +715,31 @@ export default function CreateTicketModal({ isOpen, onClose, userId, userEmail, 
             {errors.url && (
               <p className="text-red-600 text-sm mt-1">{errors.url}</p>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="estimatedHours" className="block text-sm font-medium text-gray-700 mb-1">
+              Horas Estimadas para Fechar o Chamado (opcional)
+            </label>
+            <input
+              type="number"
+              id="estimatedHours"
+              name="estimatedHours"
+              min="0"
+              step="0.5"
+              value={formData.estimatedHours}
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  estimatedHours: parseFloat(e.target.value) || 0,
+                });
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Ex: 2.5 horas"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Este campo ajuda a estimar o tempo de desenvolvimento
+            </p>
           </div>
 
           <div>

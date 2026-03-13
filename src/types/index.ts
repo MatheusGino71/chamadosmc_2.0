@@ -45,6 +45,8 @@ export interface Ticket {
   createdAt: Date;
   updatedAt: Date;
   closedAt?: Date;
+  startedAt?: Date; // Data/hora quando foi colocado em "em-andamento"
+  estimatedHours?: number; // Horas estimadas para conclusão
   archived?: boolean; // Indica se o chamado está arquivado
   archivedAt?: Date; // Data em que foi arquivado
 }

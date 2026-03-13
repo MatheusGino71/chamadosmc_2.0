@@ -7,7 +7,7 @@ import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'f
 import { db } from '@/lib/firebase';
 import { Ticket, User, PRIORITY_CONFIG } from '@/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore, AlertCircle, Mail } from 'lucide-react';
+import { LogOut, User as UserIcon, Briefcase, Calendar, Bug, Sparkles, Wrench, Eye, MessageSquare, Clock, Filter, X, Plus, UserCog, Archive, ArchiveRestore, AlertCircle, Mail, TrendingUp } from 'lucide-react';
 import { autoArchiveOldTickets, unarchiveTicket } from '@/lib/archiveTickets';
 import { format, formatDistanceToNow, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -272,6 +272,14 @@ export default function AdminPage() {
         updatedAt: new Date(),
       };
       
+      // Se está iniciando o ticket, registra a hora de início
+      if (newStatus === 'em-andamento') {
+        const ticket = tickets.find(t => t.id === draggableId);
+        if (ticket && !ticket.startedAt) {
+          updateData.startedAt = new Date();
+        }
+      }
+      
       // Se está fechando o ticket, registra a data de fechamento
       if (newStatus === 'fechado') {
         updateData.closedAt = new Date();
@@ -490,6 +498,14 @@ export default function AdminPage() {
               >
                 <UserCog className="h-4 w-4" />
                 <span className="hidden md:inline">Usuários</span>
+              </button>
+              <button
+                onClick={() => router.push('/admin/acompanhamento')}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                aria-label="Acompanhamento mensal de chamados"
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden md:inline">Acompanhamento</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
