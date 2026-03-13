@@ -49,10 +49,6 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [ticketIdFilter, setTicketIdFilter] = useState<string>('');
-  
-  // Paginação
-  const [itemsPerPage] = useState(20);
-  const [displayedItems, setDisplayedItems] = useState(20);
 
   useEffect(() => {
     if (!user) return;
@@ -159,16 +155,7 @@ export default function DashboardPage() {
     });
 
     return filtered;
-  }, [tickets, searchTerm, statusFilter, typeFilter, sortOrder]);
-
-  // Tickets paginados
-  const paginatedTickets = useMemo(() => {
-    return filteredTickets.slice(0, displayedItems);
-  }, [filteredTickets, displayedItems]);
-
-  const handleLoadMore = () => {
-    setDisplayedItems((prev) => prev + itemsPerPage);
-  };
+  }, [tickets, searchTerm, statusFilter, typeFilter, sortOrder, ticketIdFilter]);
 
   const handleLogout = () => {
     setShowLogoutDialog(true);
@@ -415,7 +402,7 @@ export default function DashboardPage() {
 
                 {/* Contador de resultados */}
                 <p className="text-sm text-gray-600">
-                  Mostrando {paginatedTickets.length} de {filteredTickets.length} chamado(s)
+                  {filteredTickets.length} chamado(s)
                   {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos' ? ' (filtrado)' : ''}
                 </p>
               </div>
@@ -427,7 +414,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold text-gray-900">Histórico de Chamados</h2>
           </div>
           
-          {paginatedTickets.length === 0 ? (
+          {filteredTickets.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               {searchTerm || statusFilter !== 'todos' || typeFilter !== 'todos' 
                 ? 'Nenhum chamado encontrado com os filtros selecionados.'
@@ -437,7 +424,7 @@ export default function DashboardPage() {
           ) : (
             <>
               <div className="divide-y divide-gray-200" role="list" aria-label="Lista de chamados">
-                {paginatedTickets.map((ticket) => (
+                {filteredTickets.map((ticket) => (
                   <article 
                     key={ticket.id} 
                     className="p-6 hover:bg-gray-50 transition"
@@ -507,15 +494,34 @@ export default function DashboardPage() {
                           </a>
                         )}
                       </div>
-                      {(ticket.imageUrl || ticket.imageBase64) && (
-                        <div className="relative w-full sm:w-32 h-32 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
-                          <Image
-                            src={(ticket.imageUrl || ticket.imageBase64) as string}
-                            alt={`Imagem do chamado ${ticket.ticketId}`}
-                            fill
-                            sizes="128px"
-                            className="object-cover"
-                          />
+                      {/* Imagens do chamado */}
+                      {((ticket.imageUrls && ticket.imageUrls.length > 0) || ticket.imageUrl || ticket.imageBase64) && (
+                        <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+                          {ticket.imageUrls && ticket.imageUrls.length > 0 ? (
+                            // Novo formato: múltiplas imagens
+                            ticket.imageUrls.slice(0, 3).map((url, idx) => (
+                              <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200">
+                                <Image
+                                  src={url}
+                                  alt={`Imagem ${idx + 1} do chamado ${ticket.ticketId}`}
+                                  fill
+                                  sizes="96px"
+                                  className="object-cover"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            // Formato antigo: uma imagem
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-200">
+                              <Image
+                                src={(ticket.imageUrl || ticket.imageBase64) as string}
+                                alt={`Imagem do chamado ${ticket.ticketId}`}
+                                fill
+                                sizes="128px"
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -534,20 +540,6 @@ export default function DashboardPage() {
                   </article>
                 ))}
               </div>
-
-              {/* Botão Load More */}
-              {displayedItems < filteredTickets.length && (
-                <div className="px-6 py-4 border-t border-gray-200 text-center">
-                  <button
-                    onClick={handleLoadMore}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    aria-label="Carregar mais chamados"
-                  >
-                    <ChevronDown className="h-5 w-5" />
-                    Carregar mais ({filteredTickets.length - displayedItems} restantes)
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>

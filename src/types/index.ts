@@ -31,7 +31,8 @@ export interface Ticket {
   subtipoInfra?: string; // 'Solicitar aparelho/máquina' ou 'Suporte'
   cpf?: string; // CPF para criação de conta
   imageBase64?: string; // Deprecated: usado em chamados antigos
-  imageUrl?: string; // URL da imagem no Firebase Storage
+  imageUrl?: string; // Deprecated: URL da imagem única (mantido para compatibilidade)
+  imageUrls?: string[]; // URLs de até 3 imagens no Firebase Storage
   url?: string;
   documentBase64?: string; // Deprecated: usado em chamados antigos
   documentUrl?: string; // URL do documento no Firebase Storage

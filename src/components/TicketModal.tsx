@@ -630,25 +630,55 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                 </p>
               </div>
 
-              {/* Imagem */}
-              {(ticket.imageUrl || ticket.imageBase64) && (
+              {/* Imagens */}
+              {((ticket.imageUrls && ticket.imageUrls.length > 0) || ticket.imageUrl || ticket.imageBase64) && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Imagem Anexada</h3>
-                  <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200 group cursor-pointer"
-                       onClick={() => setExpandedImage((ticket.imageUrl || ticket.imageBase64) as string)}>
-                    <Image
-                      src={(ticket.imageUrl || ticket.imageBase64) as string}
-                      alt="Anexo do chamado"
-                      fill
-                      sizes="(max-width: 768px) 100vw, 800px"
-                      className="object-contain bg-gray-50"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3">
-                        <Maximize2 className="h-6 w-6 text-gray-900" />
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    {ticket.imageUrls && ticket.imageUrls.length > 1 ? 'Imagens Anexadas' : 'Imagem Anexada'}
+                  </h3>
+                  
+                  {ticket.imageUrls && ticket.imageUrls.length > 0 ? (
+                    // Novo formato: múltiplas imagens
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {ticket.imageUrls.map((url, idx) => (
+                        <div 
+                          key={idx}
+                          className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200 group cursor-pointer"
+                          onClick={() => setExpandedImage(url)}
+                        >
+                          <Image
+                            src={url}
+                            alt={`Anexo ${idx + 1} do chamado`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-contain bg-gray-50"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3">
+                              <Maximize2 className="h-6 w-6 text-gray-900" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Formato antigo: uma imagem
+                    <div className="relative w-full h-96 rounded-lg overflow-hidden border border-gray-200 group cursor-pointer"
+                         onClick={() => setExpandedImage((ticket.imageUrl || ticket.imageBase64) as string)}>
+                      <Image
+                        src={(ticket.imageUrl || ticket.imageBase64) as string}
+                        alt="Anexo do chamado"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 800px"
+                        className="object-contain bg-gray-50"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3">
+                          <Maximize2 className="h-6 w-6 text-gray-900" />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 

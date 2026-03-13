@@ -69,8 +69,8 @@ export default function NovoChamadoPage() {
     url: '',
     tipo: '' as 'bug' | 'melhoria' | 'infra' | '',
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState<string>('');
   const [showBugModal, setShowBugModal] = useState(false);
@@ -90,41 +90,55 @@ export default function NovoChamadoPage() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Valida tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        setError('Por favor, selecione uma imagem válida');
-        toast.error('Por favor, selecione uma imagem válida');
-        return;
-      }
-      
-      // Valida tamanho (máx 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('A imagem deve ter no máximo 5MB');
-        toast.error('A imagem deve ter no máximo 5MB');
-        return;
-      }
+    const files = Array.from(e.target.files || []);
+    
+    if (imageFiles.length + files.length > 3) {
+      toast.error('Você pode adicionar no máximo 3 imagens');
+      return;
+    }
 
-      setError('');
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione apenas imagens válidas');
+        return;
+      }
       
-      // Salva o arquivo e cria preview
-      setImageFile(file);
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Cada imagem deve ter no máximo 5MB');
+        return;
+      }
+    }
+
+    const newFiles = [...imageFiles, ...files].slice(0, 3);
+    setImageFiles(newFiles);
+
+    // Criar previews para as novas imagens
+    const newPreviews: string[] = [];
+    let loadedCount = 0;
+    
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        // Limpa erro de imagem quando uma imagem é selecionada
-        if (errors.imageBase64) {
-          setErrors({ ...errors, imageBase64: undefined });
+        newPreviews.push(reader.result as string);
+        loadedCount++;
+        
+        if (loadedCount === files.length) {
+          setImagePreviews([...imagePreviews, ...newPreviews]);
+          // Limpa erro de imagem quando uma imagem é selecionada
+          if (errors.imageBase64) {
+            setErrors({ ...errors, imageBase64: undefined });
+          }
         }
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview('');
+  const removeImage = (index: number) => {
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,8 +241,8 @@ export default function NovoChamadoPage() {
     }
 
     // Valida imagem
-    if (!imageFile) {
-      newErrors.imageBase64 = 'A imagem é obrigatória';
+    if (imageFiles.length === 0) {
+      newErrors.imageBase64 = 'Pelo menos uma imagem é obrigatória';
     }
 
     setErrors(newErrors);
@@ -267,12 +281,13 @@ export default function NovoChamadoPage() {
       const ticketId = await generateTicketId();
       console.log('Ticket ID gerado:', ticketId);
 
-      // Upload da imagem para o Storage
-      let imageUrl = '';
-      if (imageFile) {
+      // Upload das imagens para o Storage (até 3)
+      const imageUrls: string[] = [];
+      for (const imageFile of imageFiles) {
         console.log('Fazendo upload da imagem...');
-        imageUrl = await uploadTicketImage(imageFile, ticketId);
-        console.log('Imagem enviada:', imageUrl);
+        const url = await uploadTicketImage(imageFile, ticketId);
+        console.log('Imagem enviada:', url);
+        imageUrls.push(url);
       }
 
       // Upload do documento para o Storage (se houver)
@@ -296,7 +311,7 @@ export default function NovoChamadoPage() {
         subtipoInfra: formData.subtipoInfra || '',
         cpf: formData.cpf || '',
         email: formData.email || '',
-        imageUrl: imageUrl,
+        imageUrls: imageUrls.length > 0 ? imageUrls : [],
         url: formData.url || '',
         documentUrl: documentUrl,
         documentName: documentName || '',
@@ -698,16 +713,17 @@ export default function NovoChamadoPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Imagem *
+                Imagens * (até 3)
               </label>
               
-              {!imagePreview ? (
+              {imagePreviews.length < 3 && (
                 <div className={`border-2 border-dashed rounded-lg p-6 text-center hover:border-primary-400 transition ${
                   errors.imageBase64 ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}>
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageChange}
                     className="hidden"
                     id="image-upload"
@@ -718,31 +734,38 @@ export default function NovoChamadoPage() {
                   >
                     <Upload className={`h-12 w-12 mb-2 ${errors.imageBase64 ? 'text-red-400' : 'text-gray-400'}`} />
                     <span className={`text-sm ${errors.imageBase64 ? 'text-red-700' : 'text-gray-600'}`}>
-                      Clique para selecionar uma imagem
+                      Clique para selecionar imagens ({imagePreviews.length}/3)
                     </span>
                     <span className="text-xs text-gray-500 mt-1">
-                      PNG, JPG até 2MB (será convertida em Base64)
+                      PNG, JPG até 5MB cada
                     </span>
                   </label>
                 </div>
-              ) : (
-                <div className="relative">
-                  <div className="relative w-full h-64 rounded-lg overflow-hidden border-2 border-gray-200">
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      fill
-                      sizes="600px"
-                      className="object-contain"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-lg"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+              )}
+              
+              {imagePreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200">
+                        <Image
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          sizes="200px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition"
+                        aria-label={`Remover imagem ${index + 1}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
               {errors.imageBase64 && (
