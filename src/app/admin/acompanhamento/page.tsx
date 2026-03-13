@@ -10,6 +10,7 @@ import { format, formatDistanceToNow, startOfMonth, endOfMonth, differenceInMinu
 import { ptBR } from 'date-fns/locale';
 import { ArrowLeft, Clock, TrendingUp, Music, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function AcompanhamentoPage() {
   const { user } = useAuth();
