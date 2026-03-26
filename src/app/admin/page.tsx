@@ -817,14 +817,17 @@ export default function AdminPage() {
                         <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                           {ticket.descricao}
                         </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-2">
+                          <span className="font-medium text-gray-700">Solicitante:</span>
+                          <span className="font-medium text-gray-900">{ticket.userName}</span>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 font-semibold rounded">
+                            {ticket.setor}
+                          </span>
+                        </div>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Briefcase className="h-3 w-3" />
                             {ticket.sistema}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <UserIcon className="h-3 w-3" />
-                            {ticket.setor}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -992,6 +995,9 @@ export default function AdminPage() {
                                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                                     <UserIcon className="h-4 w-4" />
                                     <span>{ticket.userName}</span>
+                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                                      {ticket.setor}
+                                    </span>
                                   </div>
 
                                   {/* Responsável */}

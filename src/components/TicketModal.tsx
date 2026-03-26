@@ -28,6 +28,18 @@ const statusLabels = {
   'fechado': { label: 'Fechado', color: 'bg-gray-100 text-gray-800' },
 };
 
+const setores = [
+  'Financeiro',
+  'TI',
+  'RH',
+  'Marketing',
+  'Comercial',
+  'Sucesso do Aluno',
+  'Diretoria',
+  'Pedagógico',
+  'Outros'
+];
+
 export default function TicketModal({ ticket, onClose, admins = [], onDelete }: TicketModalProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -38,8 +50,10 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   const [sendingInternal, setSendingInternal] = useState(false);
   const [assignedTo, setAssignedTo] = useState(ticket.assignedTo || '');
   const [priority, setPriority] = useState<Priority>(ticket.priority || 'media');
+  const [setor, setSetor] = useState(ticket.setor || '');
   const [updatingAssignment, setUpdatingAssignment] = useState(false);
   const [updatingPriority, setUpdatingPriority] = useState(false);
+  const [updatingSetor, setUpdatingSetor] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
@@ -314,6 +328,30 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
     }
   };
 
+  const handleUpdateSetor = async (newSetor: string) => {
+    if (!user || user.role !== 'admin') return;
+    if (updatingSetor) return;
+
+    setUpdatingSetor(true);
+
+    try {
+      const ticketRef = doc(db, 'tickets', ticket.id);
+
+      await updateDoc(ticketRef, {
+        setor: newSetor,
+        updatedAt: new Date(),
+      });
+
+      setSetor(newSetor);
+      toast.success('Setor atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar setor:', error);
+      toast.error('Erro ao atualizar setor');
+    } finally {
+      setUpdatingSetor(false);
+    }
+  };
+
   const handleArchiveTicket = async () => {
     if (!user || user.role !== 'admin') {
       toast.error('Apenas administradores podem arquivar chamados');
@@ -496,16 +534,14 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                     <UserIcon className="h-4 w-4 text-gray-500" />
                     <span className="text-gray-600">Nome:</span>
                     <span className="font-medium text-gray-900">{ticket.userName}</span>
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                      {ticket.setor}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-4 w-4 text-gray-500" />
                     <span className="text-gray-600">Email:</span>
                     <span className="font-medium text-gray-900">{ticket.userEmail}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Briefcase className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Setor:</span>
-                    <span className="font-medium text-gray-900">{ticket.setor}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -569,6 +605,31 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
                   </select>
                   <p className="text-xs text-indigo-600 mt-2">
                     {assignedTo ? `Atribuído a: ${admins.find(a => a.uid === assignedTo)?.nome}` : 'Nenhum administrador responsável por este chamado'}
+                  </p>
+                </div>
+              )}
+
+              {/* Setor (apenas para admins) */}
+              {user?.role === 'admin' && (
+                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                  <h3 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Setor do Chamado
+                  </h3>
+                  <select
+                    value={setor}
+                    onChange={(e) => handleUpdateSetor(e.target.value)}
+                    disabled={updatingSetor}
+                    className="w-full px-3 py-2 border border-emerald-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {setores.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-emerald-600 mt-2">
+                    Setor atual: <span className="font-medium">{setor}</span>
                   </p>
                 </div>
               )}

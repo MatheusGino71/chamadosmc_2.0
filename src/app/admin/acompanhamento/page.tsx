@@ -16,6 +16,7 @@ export default function AcompanhamentoPage() {
   const { user } = useAuth();
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const saberSoundRef = useRef<HTMLAudioElement>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -23,6 +24,10 @@ export default function AcompanhamentoPage() {
   const [audioVolume, setAudioVolume] = useState(0.5);
   const [isMuted, setIsMuted] = useState(false);
   const [showAudioControls, setShowAudioControls] = useState(false);
+  const [filterResponsavel, setFilterResponsavel] = useState<string>('all');
+  const [filterTipo, setFilterTipo] = useState<string>('all');
+  const [filterUsuario, setFilterUsuario] = useState<string>('');
+  const [filterSetor, setFilterSetor] = useState<string>('all');
 
   // Redireciona se não for admin
   useEffect(() => {
@@ -127,6 +132,16 @@ export default function AcompanhamentoPage() {
     }
   };
 
+  // Toca som do sabre de luz quando filtro muda
+  const playSaberSound = () => {
+    if (saberSoundRef.current && !isMuted) {
+      saberSoundRef.current.currentTime = 0;
+      saberSoundRef.current.play().catch(() => {
+        // Som pode não tocar em alguns navegadores
+      });
+    }
+  };
+
   // Calcula tempo levado (apenas do período em andamento)
   const calculateTimeSpent = (ticket: Ticket): string => {
     if (!ticket.startedAt || !ticket.closedAt) {
@@ -178,11 +193,25 @@ export default function AcompanhamentoPage() {
   const monthFormatted = format(selectedMonth, 'MMMM yyyy', { locale: ptBR });
   const monthCapitalized = monthFormatted.charAt(0).toUpperCase() + monthFormatted.slice(1);
 
+  // Filtra tickets conforme os filtros aplicados
+  const filteredTickets = tickets.filter(ticket => {
+    if (filterResponsavel !== 'all' && ticket.assignedTo !== filterResponsavel) return false;
+    if (filterTipo !== 'all' && ticket.tipo !== filterTipo) return false;
+    if (filterUsuario && !ticket.userName.toLowerCase().includes(filterUsuario.toLowerCase())) return false;
+    if (filterSetor !== 'all' && ticket.setor !== filterSetor) return false;
+    return true;
+  });
+
   // Cálculos agregados
-  const totalTickets = tickets.length;
-  const ticketsComTempo = tickets.filter(t => t.startedAt && t.closedAt);
+  const totalTickets = filteredTickets.length;
+  const ticketsComTempo = filteredTickets.filter(t => t.startedAt && t.closedAt);
   const totalHoursSpent = ticketsComTempo.reduce((sum, ticket) => sum + calculateHoursSpent(ticket), 0);
   const totalHoursEstimated = ticketsComTempo.reduce((sum, ticket) => sum + (ticket.estimatedHours || 0), 0);
+
+  // Listas únicas para filtros
+  const responsaveis = Array.from(new Set(tickets.filter(t => t.assignedToName).map(t => t.assignedTo)));
+  const responsaveisList = responsaveis.map(r => tickets.find(t => t.assignedTo === r)).filter(Boolean);
+  const setoresUnicos = Array.from(new Set(tickets.map(t => t.setor))).sort();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
@@ -199,6 +228,11 @@ export default function AcompanhamentoPage() {
       >
         <source src="/starwars-theme.mp3" type="audio/mpeg" />
         Seu navegador não suporta reprodução de áudio.
+      </audio>
+
+      {/* Som do Sabre de Luz */}
+      <audio ref={saberSoundRef} preload="auto">
+        <source src="/freesound_community-lightsaber-clash-88733.mp3" type="audio/mpeg" />
       </audio>
 
       {/* Botão voltar */}
@@ -291,6 +325,101 @@ export default function AcompanhamentoPage() {
           </div>
         </div>
 
+        {/* Filtros */}
+        <div className="mb-8 bg-gray-800 border-2 border-purple-500 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-purple-400 mb-4">⚡ FILTROS</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filtro por Tipo */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Tipo de Chamado</label>
+              <select
+                value={filterTipo}
+                onChange={(e) => {
+                  setFilterTipo(e.target.value);
+                  playSaberSound();
+                }}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white hover:border-purple-400 transition focus:outline-none focus:border-purple-400"
+              >
+                <option value="all">Todos</option>
+                <option value="bug">🐛 Bug</option>
+                <option value="melhoria">✨ Melhoria</option>
+                <option value="infra">🔧 Infra</option>
+              </select>
+            </div>
+
+            {/* Filtro por Responsável */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Responsável</label>
+              <select
+                value={filterResponsavel}
+                onChange={(e) => {
+                  setFilterResponsavel(e.target.value);
+                  playSaberSound();
+                }}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white hover:border-purple-400 transition focus:outline-none focus:border-purple-400"
+              >
+                <option value="all">Todos</option>
+                {responsaveisList.map((ticket) => (
+                  <option key={ticket?.assignedTo} value={ticket?.assignedTo}>
+                    {ticket?.assignedToName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Setor */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Setor que Abriu</label>
+              <select
+                value={filterSetor}
+                onChange={(e) => {
+                  setFilterSetor(e.target.value);
+                  playSaberSound();
+                }}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white hover:border-purple-400 transition focus:outline-none focus:border-purple-400"
+              >
+                <option value="all">Todos</option>
+                {setoresUnicos.map((setor) => (
+                  <option key={setor} value={setor}>
+                    {setor}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Usuário */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Quem Abriu</label>
+              <input
+                type="text"
+                placeholder="Digite o nome..."
+                value={filterUsuario}
+                onChange={(e) => {
+                  setFilterUsuario(e.target.value);
+                  if (e.target.value) playSaberSound();
+                }}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-500 hover:border-purple-400 transition focus:outline-none focus:border-purple-400"
+              />
+            </div>
+          </div>
+
+          {/* Botão limpar filtros */}
+          {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterUsuario) && (
+            <button
+              onClick={() => {
+                setFilterTipo('all');
+                setFilterResponsavel('all');
+                setFilterSetor('all');
+                setFilterUsuario('');
+                playSaberSound();
+              }}
+              className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded transition"
+            >
+              🔄 Limpar Filtros
+            </button>
+          )}
+        </div>
+
         {/* Cards de resumo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-800 border-2 border-blue-500 rounded-lg p-6 text-center">
@@ -339,7 +468,16 @@ export default function AcompanhamentoPage() {
               </p>
             </div>
 
-            {tickets.map((ticket) => {
+            {/* Resultados do filtro */}
+            {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterUsuario) && (
+              <div className="bg-purple-900 border-l-4 border-purple-500 text-purple-100 p-4 rounded-lg">
+                <p className="text-sm">
+                  <strong>🎯 Filtros ativos:</strong> Mostrando {totalTickets} de {tickets.length} chamado(s)
+                </p>
+              </div>
+            )}
+
+            {filteredTickets.map((ticket) => {
               const diff = getDifference(ticket);
               const spent = calculateHoursSpent(ticket);
               const hasTimeData = ticket.startedAt && ticket.closedAt;
@@ -369,6 +507,15 @@ export default function AcompanhamentoPage() {
                               </span>
                             )}
                           </p>
+                          {/* Informações de quem abriu */}
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            <span className="bg-cyan-900 text-cyan-300 px-2 py-1 rounded">
+                              👤 {ticket.userName}
+                            </span>
+                            <span className="bg-cyan-900 text-cyan-300 px-2 py-1 rounded">
+                              🏢 {ticket.setor}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -474,11 +474,14 @@ export default function DashboardPage() {
                           {ticket.descricao.substring(0, 150)}
                           {ticket.descricao.length > 150 && '...'}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Briefcase className="h-3 w-3" aria-hidden="true" />
+                        <div className="flex items-center gap-2 mb-2 text-xs">
+                          <span className="text-gray-600">Solicitante:</span>
+                          <span className="font-medium text-gray-900">{ticket.userName}</span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 font-semibold rounded">
                             {ticket.setor}
                           </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>
                             {format(ticket.createdAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                           </span>
