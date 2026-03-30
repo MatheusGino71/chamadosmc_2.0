@@ -46,8 +46,11 @@ export const resetUserPassword = onCall(async (request) => {
     .doc(request.auth.uid)
     .get();
 
-  // Verifica se o usuário é admin
-  if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
+  // Verifica se o usuário é admin (supports both old 'admin' role and new admin_* roles)
+  const callerRole = callerDoc.data()?.role || '';
+  const isAdmin = callerRole === 'admin' || callerRole.startsWith('admin_');
+  
+  if (!callerDoc.exists || !isAdmin) {
     throw new HttpsError(
       "permission-denied",
       "Apenas administradores podem resetar senhas"

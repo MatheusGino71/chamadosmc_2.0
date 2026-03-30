@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdmin } from '@/lib/auth-helpers';
 
 export default function AdminLayout({
   children,
@@ -16,7 +17,7 @@ export default function AdminLayout({
     if (!loading) {
       if (!user) {
         router.push('/login');
-      } else if (user.role !== 'admin') {
+      } else if (!isAdmin(user)) {
         // Usuário não é admin, redireciona para dashboard normal
         router.push('/dashboard');
       }
@@ -31,7 +32,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || !isAdmin(user)) {
     return null;
   }
 

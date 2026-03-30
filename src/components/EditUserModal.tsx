@@ -9,14 +9,14 @@ interface EditUserModalProps {
   isOpen: boolean;
   user: UserType | null;
   onClose: () => void;
-  onSave: (userId: string, data: { nome: string; setor: string; cpf?: string; role: 'user' | 'admin' }) => Promise<void>;
+  onSave: (userId: string, data: { nome: string; setor: string; cpf?: string; role: any }) => Promise<void>;
 }
 
 export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUserModalProps) {
   const [nome, setNome] = useState('');
   const [setor, setSetor] = useState('');
   const [cpf, setCpf] = useState('');
-  const [role, setRole] = useState<'user' | 'admin'>('user');
+  const [role, setRole] = useState<any>('user');
   const [loading, setLoading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -186,16 +186,33 @@ export default function EditUserModal({ isOpen, user, onClose, onSave }: EditUse
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value as 'user' | 'admin')}
+              onChange={(e) => {
+                const newRole = e.target.value as any;
+                setRole(newRole);
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
-              <option value="user">Usuário</option>
-              <option value="admin">Administrador</option>
+              <option value="user">Usuário Padrão</option>
+              <optgroup label="━━━ ADMINISTRADORES ━━━">
+                <option value="admin">🔐 Administrador Genérico (Legado)</option>
+                <option value="admin_ti">🔧 Administrador TI - Acesso Total a Tudo</option>
+              </optgroup>
+              <optgroup label="━━━ ADMINISTRADORES POR SETOR ━━━">
+                <option value="admin_pedagogico">📚 Administrador - Pedagógico</option>
+                <option value="admin_comercial">💼 Administrador - Comercial</option>
+                <option value="admin_rh">👥 Administrador - RH</option>
+                <option value="admin_financeiro">💰 Administrador - Financeiro</option>
+                <option value="admin_marketing">📢 Administrador - Marketing</option>
+                <option value="admin_sucesso_aluno">⭐ Administrador - Sucesso do Aluno</option>
+                <option value="admin_diretoria">👔 Administrador - Diretoria</option>
+                <option value="admin_outros">📌 Administrador - Outros</option>
+              </optgroup>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              {role === 'admin' 
-                ? 'Administradores têm acesso total ao sistema' 
-                : 'Usuários podem criar e gerenciar seus próprios chamados'}
+              {role === 'user' && 'Usuários podem criar e gerenciar seus próprios chamados'}
+              {role === 'admin' && '⚠️ Legado: Administrador com acesso total'}
+              {role === 'admin_ti' && '🔧 Acesso a todos os setores e funcionalidades'}
+              {role.startsWith('admin_') && role !== 'admin_ti' && `Acesso restrito ao setor específico`}
             </p>
           </div>
 

@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdmin } from '@/lib/auth-helpers';
 import { toast } from 'sonner';
 import ConfirmDialog from './ConfirmDialog';
 import { notifyNewTicketMessage, notifyTicketAssigned, notifyTicketPriorityChanged } from '@/lib/notifications';
@@ -109,7 +110,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
 
   // Listener para mensagens do chat interno (apenas para admins)
   useEffect(() => {
-    if (user?.role !== 'admin') return;
+    if (!isAdmin(user)) return;
 
     let unsubscribe: (() => void) | null = null;
 
@@ -181,7 +182,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
       });
 
       // Envia notificação para o destinatário apropriado
-      const recipientId = user.role === 'admin' ? ticket.userId : (ticket.assignedTo || '');
+      const recipientId = isAdmin(user) ? ticket.userId : (ticket.assignedTo || '');
       if (recipientId && recipientId !== user.uid) {
         try {
           await notifyNewTicketMessage(
@@ -217,7 +218,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   const handleSendInternalMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newInternalMessage.trim() || !user || user.role !== 'admin') return;
+    if (!newInternalMessage.trim() || !user || !isAdmin(user)) return;
 
     setSendingInternal(true);
 
@@ -247,7 +248,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   };
 
   const handleUpdateAssignment = async (newAssignedTo: string) => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || !isAdmin(user)) return;
 
     setUpdatingAssignment(true);
 
@@ -288,7 +289,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   };
 
   const handleUpdatePriority = async (newPriority: Priority) => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || !isAdmin(user)) return;
     if (updatingPriority) return;
 
     setUpdatingPriority(true);
@@ -329,7 +330,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   };
 
   const handleUpdateSetor = async (newSetor: string) => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || !isAdmin(user)) return;
     if (updatingSetor) return;
 
     setUpdatingSetor(true);
@@ -353,7 +354,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
   };
 
   const handleArchiveTicket = async () => {
-    if (!user || user.role !== 'admin') {
+    if (!user || !isAdmin(user)) {
       toast.error('Apenas administradores podem arquivar chamados');
       return;
     }
@@ -384,7 +385,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
     if (!user) return;
 
     // Verifica se o usuário é admin ou o dono do chamado
-    if (user.role !== 'admin' && user.uid !== ticket.userId) {
+    if (!isAdmin(user) && user.uid !== ticket.userId) {
       toast.error('Você não tem permissão para excluir este chamado');
       return;
     }
@@ -584,7 +585,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               </div>
 
               {/* Responsável (apenas para admins) */}
-              {user?.role === 'admin' && admins.length > 0 && (
+              {isAdmin(user) && admins.length > 0 && (
                 <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
                   <h3 className="text-sm font-semibold text-indigo-700 mb-3 flex items-center gap-2">
                     <UserCog className="h-4 w-4" />
@@ -665,7 +666,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               )}
 
               {/* Visualização de Prioridade (para usuários) */}
-              {user?.role !== 'admin' && (
+              {!isAdmin(user) && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
@@ -924,7 +925,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
         <div className="flex justify-between gap-3 p-6 border-t border-gray-200">
           <div className="flex gap-3">
             {/* Botão de Arquivar - mostrado apenas para admin */}
-            {user?.role === 'admin' && !ticket.archived && (
+            {isAdmin(user) && !ticket.archived && (
               <button
                 onClick={() => setShowArchiveDialog(true)}
                 disabled={archiving}
@@ -935,7 +936,7 @@ export default function TicketModal({ ticket, onClose, admins = [], onDelete }: 
               </button>
             )}
             {/* Botão de Excluir - mostrado apenas para admin ou dono do chamado */}
-            {(user?.role === 'admin' || user?.uid === ticket.userId) && (
+            {(isAdmin(user) || user?.uid === ticket.userId) && (
               <button
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={deleting}

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdmin } from '@/lib/auth-helpers';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -14,7 +15,7 @@ export default function Home() {
     if (!loading) {
       if (user) {
         // Redireciona para dashboard apropriado
-        if (user.role === 'admin') {
+        if (isAdmin(user)) {
           router.push('/admin');
         } else {
           router.push('/dashboard');

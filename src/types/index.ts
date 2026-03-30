@@ -4,7 +4,7 @@ export interface User {
   nome: string;
   setor: string;
   cpf?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'admin_ti' | 'admin_pedagogico' | 'admin_comercial' | 'admin_rh' | 'admin_financeiro' | 'admin_marketing' | 'admin_sucesso_aluno' | 'admin_diretoria' | 'admin_outros';
   createdAt: Date;
 }
 

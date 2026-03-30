@@ -1,6 +1,16 @@
 rules_version = '2';
 
 service cloud.firestore {
+  // Função auxiliar para verificar se um role é admin
+  function isAdmin(role) {
+    return role == 'admin' || role.matches('admin_.*');
+  }
+  
+  // Função para obter o role do usuário
+  function getUserRole() {
+    return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+  }
+
   match /databases/{database}/documents {
     // Regras para tickets
     match /tickets/{ticketId} {
@@ -14,13 +24,13 @@ service cloud.firestore {
       // Admins podem atualizar qualquer ticket
       // Usuários podem atualizar apenas seus próprios tickets
       allow update: if request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        isAdmin(getUserRole()) ||
         resource.data.userId == request.auth.uid
       );
       
       // Admins ou o próprio dono do ticket podem deletar
       allow delete: if request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        isAdmin(getUserRole()) ||
         resource.data.userId == request.auth.uid
       );
     }
@@ -38,7 +48,7 @@ service cloud.firestore {
       
       // Admins ou o dono do ticket podem deletar mensagens
       allow delete: if request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        isAdmin(getUserRole()) ||
         get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId == request.auth.uid
       );
     }
@@ -47,20 +57,20 @@ service cloud.firestore {
     match /tickets/{ticketId}/internalMessages/{messageId} {
       // Apenas admins podem ler mensagens internas
       allow read: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                     isAdmin(getUserRole());
       
       // Apenas admins podem criar mensagens internas
       allow create: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
       
       // Admins podem atualizar suas próprias mensagens internas
       allow update: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                      isAdmin(getUserRole()) &&
                       resource.data.senderId == request.auth.uid;
       
       // Apenas admins podem deletar mensagens internas
       allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
     }
     
     // Regras para usuários
@@ -75,12 +85,12 @@ service cloud.firestore {
       // Admins podem atualizar qualquer usuário
       allow update: if request.auth != null && (
         request.auth.uid == userId ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        isAdmin(getUserRole())
       );
       
       // Apenas admins podem deletar usuários
       allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
     }
     
     // Regras para contadores de IDs (garantir IDs únicos)
@@ -93,7 +103,7 @@ service cloud.firestore {
       
       // Apenas admins podem deletar contadores
       allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
     }
     
     // Regras para notificações
@@ -118,20 +128,20 @@ service cloud.firestore {
     match /adminMessages/{messageId} {
       // Admins podem ler mensagens
       allow read: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                     isAdmin(getUserRole());
       
       // Apenas admins podem criar mensagens
       allow create: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                      isAdmin(getUserRole()) &&
                       request.resource.data.senderId == request.auth.uid;
       
       // Apenas admins podem atualizar mensagens
       allow update: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
       
       // Remetente e destinatário podem deletar
       allow delete: if request.auth != null && 
-                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+                      isAdmin(getUserRole());
     }
   }
 }

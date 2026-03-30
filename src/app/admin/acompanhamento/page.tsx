@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdmin, getAdminSetor, isAdminTI, canAccessGlobalManagement } from '@/lib/auth-helpers';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ticket } from '@/types';
@@ -29,16 +30,19 @@ export default function AcompanhamentoPage() {
   const [filterUsuario, setFilterUsuario] = useState<string>('');
   const [filterSetor, setFilterSetor] = useState<string>('all');
 
-  // Redireciona se não for admin
+  // Redireciona se não tem permissão
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && !isAdmin(user)) {
       router.push('/dashboard');
+    }
+    if (user && !canAccessGlobalManagement(user)) {
+      router.push('/admin');
     }
   }, [user, router]);
 
   // Busca os tickets finalizados (com filtro de mês no cliente)
   useEffect(() => {
-    if (!user || user.role !== 'admin') return;
+    if (!user || !isAdmin(user) || !canAccessGlobalManagement(user)) return;
 
     const q = query(
       collection(db, 'tickets'),
@@ -62,6 +66,14 @@ export default function AcompanhamentoPage() {
           } as Ticket;
         })
         .filter((ticket) => {
+          // Filtro automático de setor para admins de setor específico
+          const userSetor = getAdminSetor(user);
+          if (userSetor && !isAdminTI(user)) {
+            if (ticket.setor !== userSetor) {
+              return false;
+            }
+          }
+
           // Filtra por data de fechamento dentro do mês selecionado
           if (!ticket.closedAt) return false;
           return ticket.closedAt >= startDate && ticket.closedAt <= endDate;

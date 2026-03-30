@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAdminSetor, isAdminTI, canAccessGlobalManagement } from '@/lib/auth-helpers';
 import { collection, onSnapshot, doc, updateDoc, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ticket, User, PRIORITY_CONFIG } from '@/types';
@@ -380,6 +381,14 @@ export default function AdminPage() {
 
   // Lógica de filtros
   const filteredTickets = tickets.filter((ticket) => {
+    // Filtro automático de setor para admins de setor específico
+    const userSetor = getAdminSetor(user);
+    if (userSetor && !isAdminTI(user)) {
+      if (ticket.setor !== userSetor) {
+        return false;
+      }
+    }
+
     // Filtro por modo de visualização (ativos/arquivados)
     if (viewMode === 'active' && ticket.archived === true) {
       return false;
@@ -491,22 +500,26 @@ export default function AdminPage() {
                 <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
                 <p className="text-xs text-primary-600 font-semibold">Administrador</p>
               </div>
-              <button
-                onClick={() => router.push('/admin/usuarios')}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                aria-label="Gerenciar usuários"
-              >
-                <UserCog className="h-4 w-4" />
-                <span className="hidden md:inline">Usuários</span>
-              </button>
-              <button
-                onClick={() => router.push('/admin/acompanhamento')}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                aria-label="Acompanhamento mensal de chamados"
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span className="hidden md:inline">Acompanhamento</span>
-              </button>
+              {canAccessGlobalManagement(user) && (
+                <>
+                  <button
+                    onClick={() => router.push('/admin/usuarios')}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    aria-label="Gerenciar usuários"
+                  >
+                    <UserCog className="h-4 w-4" />
+                    <span className="hidden md:inline">Usuários</span>
+                  </button>
+                  <button
+                    onClick={() => router.push('/admin/acompanhamento')}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    aria-label="Acompanhamento mensal de chamados"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="hidden md:inline">Acompanhamento</span>
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"

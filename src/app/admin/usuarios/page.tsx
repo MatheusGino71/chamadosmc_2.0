@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessGlobalManagement } from '@/lib/auth-helpers';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
@@ -36,10 +37,10 @@ export default function UsersManagementPage() {
   });
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
-  // Verifica se é admin
+  // Verifica se tem permissão para gerenciar usuários
   useEffect(() => {
-    if (!loading && currentUser?.role !== 'admin') {
-      router.push('/dashboard');
+    if (!loading && !canAccessGlobalManagement(currentUser)) {
+      router.push('/admin');
     }
   }, [currentUser, loading, router]);
 
@@ -76,7 +77,7 @@ export default function UsersManagementPage() {
     setEditModalOpen(true);
   };
 
-  const handleSaveUser = async (userId: string, data: { nome: string; setor: string; cpf?: string; role: 'user' | 'admin' }) => {
+  const handleSaveUser = async (userId: string, data: { nome: string; setor: string; cpf?: string; role: any }) => {
     try {
       await updateDoc(doc(db, 'users', userId), {
         ...data,
@@ -233,7 +234,7 @@ export default function UsersManagementPage() {
               <div>
                 <p className="text-gray-600 text-sm">Administradores</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === 'admin').length}
+                  {users.filter(u => u.role.startsWith('admin')).length}
                 </p>
               </div>
               <Shield className="text-indigo-500" size={32} />
@@ -357,14 +358,20 @@ export default function UsersManagementPage() {
                       {/* Role */}
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'admin'
-                            ? 'bg-purple-100 text-purple-800'
+                          user.role.startsWith('admin')
+                            ? user.role === 'admin_ti'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-purple-100 text-purple-800'
                             : 'bg-blue-100 text-blue-800'
                         }`}>
-                          {user.role === 'admin' ? (
+                          {user.role.startsWith('admin') ? (
                             <>
                               <Shield size={14} />
-                              Administrador
+                              {user.role === 'admin_ti' 
+                                ? 'Admin TI' 
+                                : user.role === 'admin'
+                                ? 'Admin'
+                                : `Admin ${user.setor}`}
                             </>
                           ) : (
                             <>
