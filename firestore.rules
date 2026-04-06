@@ -1,16 +1,6 @@
 rules_version = '2';
 
 service cloud.firestore {
-  // Função auxiliar para verificar se um role é admin
-  function isAdmin(role) {
-    return role == 'admin' || role.matches('admin_.*');
-  }
-  
-  // Função para obter o role do usuário
-  function getUserRole() {
-    return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-  }
-
   match /databases/{database}/documents {
     // Regras para tickets
     match /tickets/{ticketId} {
@@ -21,23 +11,18 @@ service cloud.firestore {
       allow create: if request.auth != null && 
                       request.resource.data.userId == request.auth.uid;
       
-      // Admins podem atualizar qualquer ticket
-      // Usuários podem atualizar apenas seus próprios tickets
-      allow update: if request.auth != null && (
-        isAdmin(getUserRole()) ||
-        resource.data.userId == request.auth.uid
-      );
+      // Usuários podem atualizar se forem donos ou admins
+      allow update: if request.auth != null && 
+                      resource.data.userId == request.auth.uid;
       
-      // Admins ou o próprio dono do ticket podem deletar
-      allow delete: if request.auth != null && (
-        isAdmin(getUserRole()) ||
-        resource.data.userId == request.auth.uid
-      );
+      // Usuários podem deletar seus próprios tickets
+      allow delete: if request.auth != null && 
+                      resource.data.userId == request.auth.uid;
     }
     
     // Regras para mensagens de chat (subcoleção)
     match /tickets/{ticketId}/messages/{messageId} {
-      // Usuários autenticados podem ler mensagens dos tickets que têm acesso
+      // Usuários autenticados podem ler mensagens
       allow read: if request.auth != null;
       
       // Usuários autenticados podem criar mensagens
@@ -46,102 +31,85 @@ service cloud.firestore {
       // Usuários podem atualizar suas próprias mensagens
       allow update: if request.auth != null && resource.data.senderId == request.auth.uid;
       
-      // Admins ou o dono do ticket podem deletar mensagens
-      allow delete: if request.auth != null && (
-        isAdmin(getUserRole()) ||
-        get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId == request.auth.uid
-      );
+      // Usuários podem deletar suas próprias mensagens
+      allow delete: if request.auth != null && 
+                      resource.data.senderId == request.auth.uid;
     }
     
-    // Regras para mensagens internas (subcoleção - apenas admins)
+    // Regras para mensagens internas (subcoleção)
     match /tickets/{ticketId}/internalMessages/{messageId} {
-      // Apenas admins podem ler mensagens internas
-      allow read: if request.auth != null && 
-                     isAdmin(getUserRole());
+      // Usuários autenticados podem ler
+      allow read: if request.auth != null;
       
-      // Apenas admins podem criar mensagens internas
-      allow create: if request.auth != null && 
-                      isAdmin(getUserRole());
+      // Usuários autenticados podem criar
+      allow create: if request.auth != null;
       
-      // Admins podem atualizar suas próprias mensagens internas
+      // Usuários podem atualizar suas próprias mensagens
       allow update: if request.auth != null && 
-                      isAdmin(getUserRole()) &&
                       resource.data.senderId == request.auth.uid;
       
-      // Apenas admins podem deletar mensagens internas
+      // Usuários podem deletar suas próprias mensagens
       allow delete: if request.auth != null && 
-                      isAdmin(getUserRole());
+                      resource.data.senderId == request.auth.uid;
     }
     
     // Regras para usuários
     match /users/{userId} {
-      // Usuários autenticados podem ler qualquer perfil (necessário para verificar roles)
+      // Usuários autenticados podem ler qualquer perfil
       allow read: if request.auth != null;
       
       // Usuários podem criar seu próprio perfil
       allow create: if request.auth != null && request.auth.uid == userId;
       
       // Usuários podem atualizar seu próprio perfil
-      // Admins podem atualizar qualquer usuário
-      allow update: if request.auth != null && (
-        request.auth.uid == userId ||
-        isAdmin(getUserRole())
-      );
+      allow update: if request.auth != null && 
+                      request.auth.uid == userId;
       
-      // Apenas admins podem deletar usuários
+      // Usuários podem deletar sua conta
       allow delete: if request.auth != null && 
-                      isAdmin(getUserRole());
+                      request.auth.uid == userId;
     }
     
-    // Regras para contadores de IDs (garantir IDs únicos)
+    // Regras para contadores de IDs
     match /counters/{counterId} {
       // Usuários autenticados podem ler contadores
       allow read: if request.auth != null;
       
-      // Apenas usuários autenticados podem criar/atualizar contadores (via transação)
+      // Usuários autenticados podem criar/atualizar contadores
       allow create, update: if request.auth != null;
       
-      // Apenas admins podem deletar contadores
-      allow delete: if request.auth != null && 
-                      isAdmin(getUserRole());
+      // Usuários autenticados podem deletar
+      allow delete: if request.auth != null;
     }
     
     // Regras para notificações
     match /notifications/{notificationId} {
-      // Usuários podem ler suas próprias notificações
+      // Usuários podem ler
       allow read: if request.auth != null;
       
       // Qualquer usuário autenticado pode criar notificações
-      allow create: if request.auth != null &&
-                      request.resource.data.recipientId != null;
+      allow create: if request.auth != null;
       
-      // Usuários podem atualizar apenas suas próprias notificações (para marcar como lida)
-      allow update: if request.auth != null && 
-                      resource.data.recipientId == request.auth.uid;
+      // Usuários podem atualizar
+      allow update: if request.auth != null;
       
-      // Usuários podem deletar suas próprias notificações
-      allow delete: if request.auth != null && 
-                      resource.data.recipientId == request.auth.uid;
+      // Usuários podem deletar
+      allow delete: if request.auth != null;
     }
     
     // Regras para mensagens entre administradores
     match /adminMessages/{messageId} {
-      // Admins podem ler mensagens
-      allow read: if request.auth != null && 
-                     isAdmin(getUserRole());
+      // Usuários autenticados podem ler
+      allow read: if request.auth != null;
       
-      // Apenas admins podem criar mensagens
-      allow create: if request.auth != null && 
-                      isAdmin(getUserRole()) &&
-                      request.resource.data.senderId == request.auth.uid;
+      // Usuários autenticados podem criar
+      allow create: if request.auth != null;
       
-      // Apenas admins podem atualizar mensagens
-      allow update: if request.auth != null && 
-                      isAdmin(getUserRole());
+      // Usuários autenticados podem atualizar
+      allow update: if request.auth != null;
       
-      // Remetente e destinatário podem deletar
-      allow delete: if request.auth != null && 
-                      isAdmin(getUserRole());
+      // Usuários autenticados podem deletar
+      allow delete: if request.auth != null;
     }
   }
 }
