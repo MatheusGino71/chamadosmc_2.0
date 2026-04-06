@@ -2,113 +2,18 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para tickets
-    match /tickets/{ticketId} {
-      // Usuários autenticados podem ler todos os tickets
+    // Qualquer coleção e subcoleção
+    match /{document=**} {
+      // Usuários autenticados podem ler tudo
       allow read: if request.auth != null;
       
-      // Usuários autenticados podem criar tickets
-      allow create: if request.auth != null && 
-                      request.resource.data.userId == request.auth.uid;
-      
-      // Usuários podem atualizar se forem donos ou admins
-      allow update: if request.auth != null && 
-                      resource.data.userId == request.auth.uid;
-      
-      // Usuários podem deletar seus próprios tickets
-      allow delete: if request.auth != null && 
-                      resource.data.userId == request.auth.uid;
-    }
-    
-    // Regras para mensagens de chat (subcoleção)
-    match /tickets/{ticketId}/messages/{messageId} {
-      // Usuários autenticados podem ler mensagens
-      allow read: if request.auth != null;
-      
-      // Usuários autenticados podem criar mensagens
+      // Usuários autenticados podem criar tudo
       allow create: if request.auth != null;
       
-      // Usuários podem atualizar suas próprias mensagens
-      allow update: if request.auth != null && resource.data.senderId == request.auth.uid;
-      
-      // Usuários podem deletar suas próprias mensagens
-      allow delete: if request.auth != null && 
-                      resource.data.senderId == request.auth.uid;
-    }
-    
-    // Regras para mensagens internas (subcoleção)
-    match /tickets/{ticketId}/internalMessages/{messageId} {
-      // Usuários autenticados podem ler
-      allow read: if request.auth != null;
-      
-      // Usuários autenticados podem criar
-      allow create: if request.auth != null;
-      
-      // Usuários podem atualizar suas próprias mensagens
-      allow update: if request.auth != null && 
-                      resource.data.senderId == request.auth.uid;
-      
-      // Usuários podem deletar suas próprias mensagens
-      allow delete: if request.auth != null && 
-                      resource.data.senderId == request.auth.uid;
-    }
-    
-    // Regras para usuários
-    match /users/{userId} {
-      // Usuários autenticados podem ler qualquer perfil
-      allow read: if request.auth != null;
-      
-      // Usuários podem criar seu próprio perfil
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // Usuários podem atualizar seu próprio perfil
-      allow update: if request.auth != null && 
-                      request.auth.uid == userId;
-      
-      // Usuários podem deletar sua conta
-      allow delete: if request.auth != null && 
-                      request.auth.uid == userId;
-    }
-    
-    // Regras para contadores de IDs
-    match /counters/{counterId} {
-      // Usuários autenticados podem ler contadores
-      allow read: if request.auth != null;
-      
-      // Usuários autenticados podem criar/atualizar contadores
-      allow create, update: if request.auth != null;
-      
-      // Usuários autenticados podem deletar
-      allow delete: if request.auth != null;
-    }
-    
-    // Regras para notificações
-    match /notifications/{notificationId} {
-      // Usuários podem ler
-      allow read: if request.auth != null;
-      
-      // Qualquer usuário autenticado pode criar notificações
-      allow create: if request.auth != null;
-      
-      // Usuários podem atualizar
+      // Usuários autenticados podem atualizar tudo
       allow update: if request.auth != null;
       
-      // Usuários podem deletar
-      allow delete: if request.auth != null;
-    }
-    
-    // Regras para mensagens entre administradores
-    match /adminMessages/{messageId} {
-      // Usuários autenticados podem ler
-      allow read: if request.auth != null;
-      
-      // Usuários autenticados podem criar
-      allow create: if request.auth != null;
-      
-      // Usuários autenticados podem atualizar
-      allow update: if request.auth != null;
-      
-      // Usuários autenticados podem deletar
+      // Usuários autenticados podem deletar tudo
       allow delete: if request.auth != null;
     }
   }
