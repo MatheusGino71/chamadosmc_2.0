@@ -1,9 +1,9 @@
 'use client';
 
-// VERSÃO: 2.1 - STORAGE FIX - 27/02/2026 18:45
-// Esta versão usa Firebase Storage para imagens e documentos (não base64)
+// VERSÃO: 3.0 - FORMULÁRIOS DINÂMICOS - 08/04/2026
+// Esta versão suporta formulários customizados por setor
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
@@ -13,6 +13,10 @@ import { uploadTicketImage, uploadTicketDocument } from '@/lib/storage';
 import { ArrowLeft, Upload, X, Link as LinkIcon, Bug, Sparkles, Wrench } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { FormConfig } from '@/types';
+import { useFormConfig } from '@/hooks/useFormConfig';
+import DynamicFormRenderer from '@/components/DynamicFormRenderer';
+import { isAdminTI } from '@/lib/auth-helpers';
 
 const setores = [
   'Financeiro',
@@ -48,12 +52,12 @@ interface FieldErrors {
 
 export default function NovoChamadoPage() {
   // VERIFICAÇÃO DE VERSÃO - Se não aparecer este log, o cache não foi limpo!
-  console.log('%c🔥 VERSÃO 2.1 - STORAGE FIX ATIVA 🔥', 'color: #00ff00; font-size: 20px; font-weight: bold;');
-  console.log('%c✅ Esta versão USA Firebase Storage (NÃO base64)', 'color: #00ff00; font-size: 16px;');
-  console.log('%c❌ Se aparecer erro de "documentBase64", limpe o cache!', 'color: #ff0000; font-size: 16px;');
+  console.log('%c🔥 VERSÃO 3.0 - FORMULÁRIOS DINÂMICOS ATIVA 🔥', 'color: #00ff00; font-size: 20px; font-weight: bold;');
+  console.log('%c✅ Esta versão suporta formulários customizados por setor', 'color: #00ff00; font-size: 16px;');
   
   const { user } = useAuth();
   const router = useRouter();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -69,6 +73,10 @@ export default function NovoChamadoPage() {
     url: '',
     tipo: '' as 'bug' | 'melhoria' | 'infra' | '',
   });
+  
+  // Usar hook com localStorage para FormConfig (será chamado quando setor mudar)
+  const { formConfig } = useFormConfig(formData.setor || undefined);
+  const [dadosFormulario, setDadosFormulario] = useState<Record<string, any>>({});
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -76,6 +84,8 @@ export default function NovoChamadoPage() {
   const [showBugModal, setShowBugModal] = useState(false);
   const [showMelhoriaModal, setShowMelhoriaModal] = useState(false);
   const [showInfraModal, setShowInfraModal] = useState(false);
+
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -200,8 +210,9 @@ export default function NovoChamadoPage() {
       newErrors.setor = 'Selecione um setor';
     }
 
-    // Valida sistema
-    if (!formData.sistema) {
+    // Valida sistema (apenas para T.I)
+    const isTI = formData.setor === 'TI' || !formConfig;
+    if (isTI && !formData.sistema) {
       newErrors.sistema = 'Selecione um sistema';
     }
 
@@ -227,6 +238,16 @@ export default function NovoChamadoPage() {
     // Valida descrição
     if (!formData.descricao.trim()) {
       newErrors.descricao = 'A descrição é obrigatória';
+    }
+
+    // Valida campos customizados
+    if (formConfig && formConfig.camposCustomizados) {
+      for (const campo of formConfig.camposCustomizados) {
+        const valor = dadosFormulario[campo.id];
+        if (campo.obrigatorio && (valor === undefined || valor === null || valor === '' || (Array.isArray(valor) && valor.length === 0))) {
+          newErrors[`campo_${campo.id}` as any] = `Campo "${campo.nome}" é obrigatório`;
+        }
+      }
     }
 
     // Valida URL
@@ -300,7 +321,7 @@ export default function NovoChamadoPage() {
 
       // Cria o chamado no Firestore
       console.log('Criando chamado no Firestore...');
-      await addDoc(collection(db, 'tickets'), {
+      const ticketData: any = {
         ticketId,
         titulo: formData.titulo,
         descricao: formData.descricao,
@@ -321,7 +342,15 @@ export default function NovoChamadoPage() {
         status: 'aberto',
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+
+      // Adiciona dados customizados do formulário se existirem
+      if (formConfig && Object.keys(dadosFormulario).length > 0) {
+        ticketData.dadosFormulario = dadosFormulario;
+        ticketData.versionFormulario = formConfig.versao;
+      }
+
+      await addDoc(collection(db, 'tickets'), ticketData);
 
       console.log('Chamado criado com sucesso!');
       toast.success('Chamado criado com sucesso!');
@@ -398,85 +427,118 @@ export default function NovoChamadoPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo *
               </label>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, tipo: 'bug' });
-                      setErrors({ ...errors, tipo: undefined });
-                    }}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
-                      formData.tipo === 'bug'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : errors.tipo
-                        ? 'border-red-500 bg-white text-gray-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-red-300'
-                    }`}
-                  >
-                    <Bug className="h-5 w-5" />
-                    <span className="font-medium">Bug</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowBugModal(true)}
-                    className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
-                  >
-                    Não sabe o que é um bug? Clique aqui
-                  </button>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, tipo: 'melhoria' });
-                      setErrors({ ...errors, tipo: undefined });
-                    }}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
-                      formData.tipo === 'melhoria'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : errors.tipo
-                        ? 'border-red-500 bg-white text-gray-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
-                    }`}
-                  >
-                    <Sparkles className="h-5 w-5" />
-                    <span className="font-medium">Melhoria</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowMelhoriaModal(true)}
-                    className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
-                  >
-                    Não sabe o que é melhoria? Clique aqui
-                  </button>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, tipo: 'infra' });
-                      setErrors({ ...errors, tipo: undefined });
-                    }}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
-                      formData.tipo === 'infra'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : errors.tipo
-                        ? 'border-red-500 bg-white text-gray-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
-                    }`}
-                  >
-                    <Wrench className="h-5 w-5" />
-                    <span className="font-medium">Infra</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowInfraModal(true)}
-                    className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
-                  >
-                    Não sabe o que é infra? Clique aqui
-                  </button>
-                </div>
+              <div className={`grid gap-3 ${
+                formConfig && formConfig.tiposChamado?.length > 3 
+                  ? 'grid-cols-2' 
+                  : 'grid-cols-3'
+              }`}>
+                {formConfig && formConfig.tiposChamado && formConfig.tiposChamado.length > 0 ? (
+                  // Renderizar tipos customizados dinamicamente
+                  formConfig.tiposChamado.map((tipoChamado) => (
+                    <button
+                      key={tipoChamado.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, tipo: tipoChamado.id as any });
+                        setErrors({ ...errors, tipo: undefined });
+                      }}
+                      className={`p-4 border-2 rounded-lg transition text-left ${
+                        formData.tipo === tipoChamado.id
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : errors.tipo && !formData.tipo
+                          ? 'border-red-500 bg-white text-gray-700'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="font-medium">{tipoChamado.nome}</div>
+                      {tipoChamado.descricao && (
+                        <div className="text-xs text-gray-500 mt-1">{tipoChamado.descricao}</div>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  // Fallback para tipos padrão (T.I)
+                  <>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, tipo: 'bug' });
+                          setErrors({ ...errors, tipo: undefined });
+                        }}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
+                          formData.tipo === 'bug'
+                            ? 'border-red-500 bg-red-50 text-red-700'
+                            : errors.tipo
+                            ? 'border-red-500 bg-white text-gray-700'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-red-300'
+                        }`}
+                      >
+                        <Bug className="h-5 w-5" />
+                        <span className="font-medium">Bug</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowBugModal(true)}
+                        className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
+                      >
+                        Não sabe o que é um bug? Clique aqui
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, tipo: 'melhoria' });
+                          setErrors({ ...errors, tipo: undefined });
+                        }}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
+                          formData.tipo === 'melhoria'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : errors.tipo
+                            ? 'border-red-500 bg-white text-gray-700'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300'
+                        }`}
+                      >
+                        <Sparkles className="h-5 w-5" />
+                        <span className="font-medium">Melhoria</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMelhoriaModal(true)}
+                        className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
+                      >
+                        Não sabe o que é melhoria? Clique aqui
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, tipo: 'infra' });
+                          setErrors({ ...errors, tipo: undefined });
+                        }}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg transition ${
+                          formData.tipo === 'infra'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : errors.tipo
+                            ? 'border-red-500 bg-white text-gray-700'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300'
+                        }`}
+                      >
+                        <Wrench className="h-5 w-5" />
+                        <span className="font-medium">Infra</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowInfraModal(true)}
+                        className="text-xs text-gray-500 hover:text-primary-600 underline mt-1 w-full text-center"
+                      >
+                        Não sabe o que é infra? Clique aqui
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               {errors.tipo && (
                 <p className="text-red-600 text-sm mt-1">{errors.tipo}</p>
@@ -533,30 +595,33 @@ export default function NovoChamadoPage() {
               )}
             </div>
 
-            <div>
-              <label htmlFor="sistema" className="block text-sm font-medium text-gray-700 mb-1">
-                Para qual sistema? *
-              </label>
-              <select
-                id="sistema"
-                name="sistema"
-                value={formData.sistema}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
-                  errors.sistema ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Selecione um sistema</option>
-                {sistemas.map((sistema) => (
-                  <option key={sistema} value={sistema}>
-                    {sistema}
-                  </option>
-                ))}
-              </select>
-              {errors.sistema && (
-                <p className="text-red-600 text-sm mt-1">{errors.sistema}</p>
-              )}
-            </div>
+            {/* Campo Sistema - apenas aparece para T.I */}
+            {(!formConfig || formData.setor === 'TI') && (
+              <div>
+                <label htmlFor="sistema" className="block text-sm font-medium text-gray-700 mb-1">
+                  Para qual sistema? *
+                </label>
+                <select
+                  id="sistema"
+                  name="sistema"
+                  value={formData.sistema}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                    errors.sistema ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Selecione um sistema</option>
+                  {sistemas.map((sistema) => (
+                    <option key={sistema} value={sistema}>
+                      {sistema}
+                    </option>
+                  ))}
+                </select>
+                {errors.sistema && (
+                  <p className="text-red-600 text-sm mt-1">{errors.sistema}</p>
+                )}
+              </div>
+            )}
 
             {/* Campo Tipo de Solicitação - aparece apenas para Outros */}
             {formData.sistema === 'Outros' && (
@@ -685,6 +750,19 @@ export default function NovoChamadoPage() {
                 <p className="text-red-600 text-sm mt-1">{errors.descricao}</p>
               )}
             </div>
+
+            {/* Campos Customizados do Setor */}
+            {formConfig && formConfig.camposCustomizados && formConfig.camposCustomizados.length > 0 && (
+              <div className="border-t pt-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">
+                  Campos Específicos do Setor {formData.setor}
+                </h3>
+                <DynamicFormRenderer
+                  formConfig={formConfig}
+                  onDataChange={(dados) => setDadosFormulario(dados)}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">

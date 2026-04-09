@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Qualquer coleção e subcoleção
+    // Qualquer coleção e subcoleção (fallback)
     match /{document=**} {
       // Usuários autenticados podem ler tudo
       allow read: if request.auth != null;

@@ -17,6 +17,46 @@ export const PRIORITY_CONFIG = {
   baixa: { label: 'Baixa', days: 7, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
 } as const;
 
+// ===== TIPOS PARA FORMULÁRIOS DINÂMICOS =====
+
+export type FormFieldType = 'text' | 'email' | 'number' | 'tel' | 'select' | 'checkbox' | 'textarea' | 'date' | 'file';
+
+export interface FormField {
+  id: string; // ID único do campo
+  nome: string; // Nome/rótulo do campo (ex: "ID do Aluno")
+  tipo: FormFieldType; // Tipo de campo
+  obrigatorio: boolean; // Se é obrigatório
+  placeholder?: string; // Placeholder/dica
+  descricao?: string; // Descrição adicional
+  opcoes?: string[]; // Para campos 'select' ou 'checkbox' - array de opções
+  validacao?: {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string; // Regex pattern
+    customMessage?: string; // Mensagem de erro custom
+  };
+  ordem: number; // Ordem de exibição no formulário
+}
+
+export interface TipoChamado {
+  id: string; // ID único
+  nome: string; // Nome do tipo (ex: "Dúvida de Aluno", "Bug")
+  descricao?: string; // Descrição do tipo
+}
+
+export interface FormConfig {
+  id: string; // ID do documento (será: 'setor_' + setor)
+  setor: string; // Nome do setor
+  tiposChamado: TipoChamado[]; // Array de tipos de chamado customizados
+  camposCustomizados: FormField[]; // Array de campos customizados
+  createdAt: Date; // Data de criação
+  updatedAt: Date; // Data de última atualização
+  createdBy: string; // UID do admin que criou
+  versao: number; // Versão da configuração (para migrations)
+}
+
+// ===== INTERFACES PRINCIPAIS =====
+
 export interface Ticket {
   id: string;
   ticketId: string; // ID único formatado (CHM-2026-0001)
@@ -49,6 +89,8 @@ export interface Ticket {
   estimatedHours?: number; // Horas estimadas para conclusão
   archived?: boolean; // Indica se o chamado está arquivado
   archivedAt?: Date; // Data em que foi arquivado
+  dadosFormulario?: Record<string, any>; // Respostas dos campos customizados do setor {fieldId: valor}
+  versionFormulario?: number; // Versão do formulário usado ao criar este chamado (para rastrear mudanças)
 }
 
 export interface ChatMessage {

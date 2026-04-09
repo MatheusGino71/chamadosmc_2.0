@@ -17,7 +17,7 @@ import EditUserModal from '@/components/EditUserModal';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
 
 export default function UsersManagementPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, signOut } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,16 +138,35 @@ export default function UsersManagementPage() {
       // Atualiza a senha
       await updatePassword(user, newPassword);
       
-      toast.success('Senha alterada com sucesso!');
+      toast.success('Senha alterada com sucesso! Fazendo logout para confirmar...');
+      
+      // Aguarda um pouco para o usuário ver a mensagem, depois faz logout
+      setTimeout(() => {
+        signOut().then(() => {
+          router.push('/login');
+        }).catch((logoutError) => {
+          console.error('Erro ao fazer logout:', logoutError);
+          // Mesmo se houver erro no logout, redireciona para login
+          router.push('/login');
+        });
+      }, 1000);
+      
+      return;
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
+      let errorMessage = 'Erro ao alterar senha';
+      
       if (error.code === 'auth/wrong-password') {
-        throw new Error('Senha atual incorreta');
+        errorMessage = 'Senha atual incorreta';
       } else if (error.code === 'auth/weak-password') {
-        throw new Error('A nova senha é muito fraca');
-      } else {
-        throw new Error('Erro ao alterar senha');
+        errorMessage = 'A nova senha é muito fraca';
+      } else if (error.code === 'auth/unable-to-recover') {
+        errorMessage = 'Não foi possível verificar a senha atual';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
+      throw new Error(errorMessage);
     }
   };
 

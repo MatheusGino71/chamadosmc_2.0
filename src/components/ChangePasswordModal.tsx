@@ -54,6 +54,11 @@ export default function ChangePasswordModal({ isOpen, onClose, onSave }: ChangeP
     e.preventDefault();
     setError('');
 
+    if (!currentPassword.trim()) {
+      setError('A senha atual é obrigatória');
+      return;
+    }
+
     if (newPassword.length < 6) {
       setError('A nova senha deve ter no mínimo 6 caracteres');
       return;
@@ -64,13 +69,22 @@ export default function ChangePasswordModal({ isOpen, onClose, onSave }: ChangeP
       return;
     }
 
+    if (currentPassword === newPassword) {
+      setError('A nova senha deve ser diferente da senha atual');
+      return;
+    }
+
     setLoading(true);
     try {
       await onSave(currentPassword, newPassword);
-      onClose();
+      // O modal será fechado automaticamente após o redirecionamento
+      // Aguarda um pouco para garantir que o logout e redirecionamento aconteçam
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (err: any) {
+      console.error('Erro detalhado:', err);
       setError(err.message || 'Erro ao alterar senha');
-    } finally {
       setLoading(false);
     }
   };
@@ -214,3 +228,4 @@ export default function ChangePasswordModal({ isOpen, onClose, onSave }: ChangeP
     </div>
   );
 }
+ 
