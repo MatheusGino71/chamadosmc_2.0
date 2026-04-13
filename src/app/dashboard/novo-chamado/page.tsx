@@ -38,8 +38,8 @@ export default function NovoChamadoPage() {
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   
-  // Setor do usuário é determinado pela sua role
-  const setorUsuario = user ? (getAdminSetor(user) || 'Outros') : undefined;
+  // Setor do usuário: para admins usa getAdminSetor(), para usuários normais usa user.setor
+  const setorUsuario = user ? (getAdminSetor(user) || user.setor || 'Outros') : undefined;
   
   // Carregar os formulários customizados do setor
   const { formConfig } = useFormConfig(setorUsuario);
