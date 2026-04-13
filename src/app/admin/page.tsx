@@ -124,6 +124,7 @@ export default function AdminPage() {
   const [filterResponsavel, setFilterResponsavel] = useState<string>('all'); // Novo filtro
   const [filterTicketId, setFilterTicketId] = useState<string>(''); // Filtro por ID
   const [filterPrioridade, setFilterPrioridade] = useState<string>('all'); // Filtro por prioridade
+  const [filterAbertoPor, setFilterAbertoPor] = useState<string>('all'); // Filtro por criador
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active'); // Modo de visualização
 
@@ -362,6 +363,7 @@ export default function AdminPage() {
     setFilterResponsavel('all');
     setFilterTicketId('');
     setFilterPrioridade('all');
+    setFilterAbertoPor('all');
   };
 
   const copyTicketId = (ticketId: string) => {
@@ -455,6 +457,11 @@ export default function AdminPage() {
       if (ticketDate < dataInicio || ticketDate > dataFim) {
         return false;
       }
+    }
+
+    // Filtro por quem abriu o chamado
+    if (filterAbertoPor !== 'all' && ticket.userId !== filterAbertoPor) {
+      return false;
     }
 
     return true;
@@ -625,7 +632,7 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
-            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId || filterPrioridade !== 'all') && (
+            {(filterSistema !== 'all' || filterSetor !== 'all' || filterPeriodo !== 'all' || filterDataInicio || filterDataFim || filterResponsavel !== 'all' || filterTicketId || filterPrioridade !== 'all' || filterAbertoPor !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -776,6 +783,29 @@ export default function AdminPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   aria-label="Data final do filtro"
                 />
+              </div>
+
+              {/* Filtro Aberto Por */}
+              <div>
+                <label htmlFor="filter-aberto-por" className="block text-xs font-medium text-gray-700 mb-1">Aberto Por</label>
+                <select
+                  id="filter-aberto-por"
+                  value={filterAbertoPor}
+                  onChange={(e) => setFilterAbertoPor(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Filtrar por quem abriu o chamado"
+                >
+                  <option value="all">Todos</option>
+                  {Array.from(new Set(tickets.map(t => t.userId)))
+                    .map(userId => tickets.find(t => t.userId === userId))
+                    .filter(Boolean)
+                    .sort((a, b) => (a?.userName || '').localeCompare(b?.userName || ''))
+                    .map((ticket) => (
+                      <option key={ticket?.userId} value={ticket?.userId}>
+                        {ticket?.userName}
+                      </option>
+                    ))}
+                </select>
               </div>
             </div>
           )}

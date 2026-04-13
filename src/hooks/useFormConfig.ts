@@ -150,6 +150,28 @@ export function useFormConfig(setor?: string) {
     }
   }, [setor, loadFormConfig]);
 
+  /**
+   * Listener para atualizações de formulário em tempo real (quando outro componente salva)
+   */
+  useEffect(() => {
+    const handleFormConfigUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { setor: updatedSetor, config } = customEvent.detail;
+      
+      // Se é do mesmo setor que estamos monitorando, recarregar
+      if (updatedSetor === setor) {
+        setFormConfig(config);
+        console.log(`✅ FormConfig atualizado para o setor: ${updatedSetor}`);
+      }
+    };
+
+    window.addEventListener('formConfigUpdated', handleFormConfigUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('formConfigUpdated', handleFormConfigUpdate as EventListener);
+    };
+  }, [setor]);
+
   return {
     formConfig,
     loading,

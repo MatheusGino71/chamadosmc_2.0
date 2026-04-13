@@ -29,6 +29,7 @@ export default function AcompanhamentoPage() {
   const [filterTipo, setFilterTipo] = useState<string>('all');
   const [filterUsuario, setFilterUsuario] = useState<string>('');
   const [filterSetor, setFilterSetor] = useState<string>('all');
+  const [filterAbertoPor, setFilterAbertoPor] = useState<string>('all');
 
   // Redireciona se não tem permissão
   useEffect(() => {
@@ -211,6 +212,7 @@ export default function AcompanhamentoPage() {
     if (filterTipo !== 'all' && ticket.tipo !== filterTipo) return false;
     if (filterUsuario && !ticket.userName.toLowerCase().includes(filterUsuario.toLowerCase())) return false;
     if (filterSetor !== 'all' && ticket.setor !== filterSetor) return false;
+    if (filterAbertoPor !== 'all' && ticket.userId !== filterAbertoPor) return false;
     return true;
   });
 
@@ -224,6 +226,10 @@ export default function AcompanhamentoPage() {
   const responsaveis = Array.from(new Set(tickets.filter(t => t.assignedToName).map(t => t.assignedTo)));
   const responsaveisList = responsaveis.map(r => tickets.find(t => t.assignedTo === r)).filter(Boolean);
   const setoresUnicos = Array.from(new Set(tickets.map(t => t.setor))).sort();
+  const usuariosCriadores = Array.from(new Set(tickets.map(t => t.userId)))
+    .map(userId => tickets.find(t => t.userId === userId))
+    .filter(Boolean)
+    .sort((a, b) => (a?.userName || '').localeCompare(b?.userName || ''));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
@@ -340,7 +346,7 @@ export default function AcompanhamentoPage() {
         {/* Filtros */}
         <div className="mb-8 bg-gray-800 border-2 border-purple-500 rounded-lg p-6">
           <h3 className="text-lg font-bold text-purple-400 mb-4">⚡ FILTROS</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Filtro por Tipo */}
             <div>
               <label className="block text-xs font-semibold text-gray-300 mb-2">Tipo de Chamado</label>
@@ -399,9 +405,29 @@ export default function AcompanhamentoPage() {
               </select>
             </div>
 
-            {/* Filtro por Usuário */}
+            {/* Filtro por Aberto Por (Criador) */}
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-2">Quem Abriu</label>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Aberto Por</label>
+              <select
+                value={filterAbertoPor}
+                onChange={(e) => {
+                  setFilterAbertoPor(e.target.value);
+                  playSaberSound();
+                }}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white hover:border-purple-400 transition focus:outline-none focus:border-purple-400"
+              >
+                <option value="all">Todos</option>
+                {usuariosCriadores.map((ticket) => (
+                  <option key={ticket?.userId} value={ticket?.userId}>
+                    {ticket?.userName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Usuário (Busca por nome) */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Quem Abriu (Busca)</label>
               <input
                 type="text"
                 placeholder="Digite o nome..."
@@ -416,12 +442,13 @@ export default function AcompanhamentoPage() {
           </div>
 
           {/* Botão limpar filtros */}
-          {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterUsuario) && (
+          {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterAbertoPor !== 'all' || filterUsuario) && (
             <button
               onClick={() => {
                 setFilterTipo('all');
                 setFilterResponsavel('all');
                 setFilterSetor('all');
+                setFilterAbertoPor('all');
                 setFilterUsuario('');
                 playSaberSound();
               }}
@@ -481,7 +508,7 @@ export default function AcompanhamentoPage() {
             </div>
 
             {/* Resultados do filtro */}
-            {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterUsuario) && (
+            {(filterTipo !== 'all' || filterResponsavel !== 'all' || filterSetor !== 'all' || filterAbertoPor !== 'all' || filterUsuario) && (
               <div className="bg-purple-900 border-l-4 border-purple-500 text-purple-100 p-4 rounded-lg">
                 <p className="text-sm">
                   <strong>🎯 Filtros ativos:</strong> Mostrando {totalTickets} de {tickets.length} chamado(s)

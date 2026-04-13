@@ -30,21 +30,22 @@ export default function FormulariosPage() {
     }
   }, [formConfig]);
 
-  // Auto-save quando localFormConfig muda (com delay para evitar salvamentos frequentes)
-  useEffect(() => {
+  // Função para salvar manualmente
+  const handleSave = async () => {
     if (!localFormConfig) return;
 
     setSaveStatus('saving');
-    const timer = setTimeout(() => {
+    try {
       saveFormConfig(localFormConfig);
       setSaveStatus('saved');
       
       // Limpar o status após 2 segundos
       setTimeout(() => setSaveStatus('idle'), 2000);
-    }, 1000); // Salva 1 segundo após a última mudança
-
-    return () => clearTimeout(timer);
-  }, [localFormConfig, saveFormConfig]);
+    } catch (error) {
+      setSaveStatus('idle');
+      console.error('Erro ao salvar:', error);
+    }
+  };
 
   // Verificações de acesso
   useEffect(() => {
@@ -106,21 +107,29 @@ export default function FormulariosPage() {
                 {showPreview ? 'Editar' : 'Preview'}
               </button>
               
+              {/* Botão de Salvar */}
+              <button
+                onClick={handleSave}
+                disabled={saveStatus === 'saving'}
+                className={`px-6 py-2 rounded-lg transition-colors font-medium ${
+                  saveStatus === 'saving'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : saveStatus === 'saved'
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {saveStatus === 'saving' 
+                  ? 'Salvando...' 
+                  : saveStatus === 'saved' 
+                  ? '✓ Salvo' 
+                  : 'Salvar'}
+              </button>
+              
               {/* Indicador de status de salvamento */}
-              <div className="flex items-center gap-2 text-sm">
-                {saveStatus === 'saving' && (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
-                    <span className="text-gray-600">Salvando...</span>
-                  </>
-                )}
-                {saveStatus === 'saved' && (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-green-600">Salvo</span>
-                  </>
-                )}
-              </div>
+              {saveStatus === 'saved' && (
+                <span className="text-sm text-green-600">Alterações salvas com sucesso!</span>
+              )}
             </div>
           </div>
         </div>
