@@ -53,9 +53,9 @@ export async function saveFormConfig(
       : 1;
 
     const formConfig: Omit<FormConfig, 'id'> = {
+      ...config,
       setor,
       versao,
-      ...config,
       updatedAt: new Date(),
     };
 

@@ -17,7 +17,7 @@ export default function FormulariosPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Pegar o setor do admin
-  const adminSetor = user ? getAdminSetor(user) : undefined;
+  const adminSetor = user ? (getAdminSetor(user) ?? undefined) : undefined;
   
   // Usar hook com localStorage
   const { formConfig, loading: loadingConfig, saveFormConfig } = useFormConfig(adminSetor);

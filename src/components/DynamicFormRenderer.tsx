@@ -150,7 +150,7 @@ export default function DynamicFormRenderer({
                           : [];
                         const newArray = e.target.checked
                           ? [...currentArray, opcao]
-                          : currentArray.filter((item) => item !== opcao);
+                          : currentArray.filter((item: string) => item !== opcao);
                         handleChange(campo.id, newArray);
                       }}
                       className="w-4 h-4 border border-gray-300 rounded disabled:bg-gray-100"

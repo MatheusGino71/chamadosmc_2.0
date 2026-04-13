@@ -48,6 +48,7 @@ interface FieldErrors {
   descricao?: string;
   url?: string;
   imageBase64?: string;
+  [key: string]: string | undefined; // Para campos dinâmicos
 }
 
 export default function NovoChamadoPage() {
@@ -245,7 +246,7 @@ export default function NovoChamadoPage() {
       for (const campo of formConfig.camposCustomizados) {
         const valor = dadosFormulario[campo.id];
         if (campo.obrigatorio && (valor === undefined || valor === null || valor === '' || (Array.isArray(valor) && valor.length === 0))) {
-          newErrors[`campo_${campo.id}` as any] = `Campo "${campo.nome}" é obrigatório`;
+          newErrors[`campo_${campo.id}`] = `Campo "${campo.nome}" é obrigatório`;
         }
       }
     }
