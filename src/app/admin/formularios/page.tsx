@@ -34,16 +34,18 @@ export default function FormulariosPage() {
   const handleSave = async () => {
     if (!localFormConfig) return;
 
+    console.log('💾 Iniciando salvar...', localFormConfig);
     setSaveStatus('saving');
     try {
-      saveFormConfig(localFormConfig);
+      const result = saveFormConfig(localFormConfig);
+      console.log('✅ Resultado do saveFormConfig:', result);
       setSaveStatus('saved');
       
       // Limpar o status após 2 segundos
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (error) {
       setSaveStatus('idle');
-      console.error('Erro ao salvar:', error);
+      console.error('❌ Erro ao salvar:', error);
     }
   };
 

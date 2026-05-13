@@ -288,8 +288,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Botão Novo Chamado */}
-            <div className="mb-6">
+            {/* Botões Novo Chamado */}
+            <div className="mb-6 flex gap-3">
               <button
                 onClick={() => router.push('/dashboard/novo-chamado')}
                 className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
@@ -297,6 +297,14 @@ export default function DashboardPage() {
               >
                 <Plus className="h-5 w-5" />
                 Novo Chamado
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/chamado-do-setor')}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                aria-label="Criar novo chamado do setor"
+              >
+                <Plus className="h-5 w-5" />
+                Novo Chamado do Setor
               </button>
             </div>
 
@@ -374,6 +382,7 @@ export default function DashboardPage() {
                         <option value="todos">Todos os tipos</option>
                         <option value="bug">Bug</option>
                         <option value="melhoria">Melhoria</option>
+                        <option value="customizado">Customizado do Setor</option>
                       </select>
                     </div>
 
@@ -451,16 +460,20 @@ export default function DashboardPage() {
                               ? 'bg-red-100 text-red-700' 
                               : ticket.tipo === 'melhoria'
                               ? 'bg-blue-100 text-blue-700'
+                              : ticket.tipo === 'customizado'
+                              ? 'bg-green-100 text-green-700'
                               : 'bg-purple-100 text-purple-700'
                           }`}>
                             {ticket.tipo === 'bug' ? (
                               <Bug className="h-3 w-3" aria-hidden="true" />
                             ) : ticket.tipo === 'melhoria' ? (
                               <Sparkles className="h-3 w-3" aria-hidden="true" />
+                            ) : ticket.tipo === 'customizado' ? (
+                              <Sparkles className="h-3 w-3" aria-hidden="true" />
                             ) : (
                               <Wrench className="h-3 w-3" aria-hidden="true" />
                             )}
-                            {ticket.tipo === 'bug' ? 'Bug' : ticket.tipo === 'melhoria' ? 'Melhoria' : 'Infra'}
+                            {ticket.tipo === 'bug' ? 'Bug' : ticket.tipo === 'melhoria' ? 'Melhoria' : ticket.tipo === 'customizado' ? 'Setor' : 'Infra'}
                           </span>
                           <span className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${PRIORITY_CONFIG[ticket.priority || 'media'].color}`}>
                             <AlertCircle className="h-3 w-3" aria-hidden="true" />
@@ -546,7 +559,7 @@ export default function DashboardPage() {
             </>
           )}
         </div>
-          </>
+        </>
         )}
       </main>
 

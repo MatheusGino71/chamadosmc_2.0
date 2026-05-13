@@ -62,7 +62,7 @@ export interface Ticket {
   ticketId: string; // ID único formatado (CHM-2026-0001)
   titulo: string;
   descricao: string;
-  tipo: 'bug' | 'melhoria' | 'infra';
+  tipo: 'bug' | 'melhoria' | 'infra' | 'customizado';
   priority: Priority; // Prioridade do chamado (apenas admin pode alterar)
   status: 'aberto' | 'em-andamento' | 'resolvido' | 'fechado';
   setor: string;

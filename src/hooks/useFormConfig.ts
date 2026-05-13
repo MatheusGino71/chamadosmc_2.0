@@ -9,6 +9,18 @@ const DEFAULT_TIPOS_CHAMADO = [
 ];
 
 /**
+ * Normaliza o nome do setor para criar a chave do localStorage
+ * Remove acentos e converte para minúsculas
+ */
+function normalizeSetorName(setorName: string): string {
+  return setorName
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+}
+
+/**
  * Hook para gerenciar configurações de formulário usando localStorage
  * Funciona de forma independente sem depender de Cloud Functions
  */
@@ -25,7 +37,7 @@ export function useFormConfig(setor?: string) {
       setLoading(true);
       setError(null);
 
-      const storageKey = `${STORAGE_KEY_PREFIX}${setorName.toLowerCase().replace(/\s+/g, '_')}`;
+      const storageKey = `${STORAGE_KEY_PREFIX}${normalizeSetorName(setorName)}`;
       const stored = localStorage.getItem(storageKey);
 
       if (stored) {
@@ -34,7 +46,7 @@ export function useFormConfig(setor?: string) {
       } else {
         // Se não houver config customizada, retorna config padrão
         const defaultConfig: FormConfig = {
-          id: `setor_${setorName.toLowerCase().replace(/\s+/g, '_')}`,
+          id: `setor_${normalizeSetorName(setorName)}`,
           setor: setorName,
           tiposChamado: DEFAULT_TIPOS_CHAMADO,
           camposCustomizados: [],
@@ -60,7 +72,7 @@ export function useFormConfig(setor?: string) {
   const saveFormConfig = useCallback((config: FormConfig) => {
     try {
       setError(null);
-      const storageKey = `${STORAGE_KEY_PREFIX}${config.setor.toLowerCase().replace(/\s+/g, '_')}`;
+      const storageKey = `${STORAGE_KEY_PREFIX}${normalizeSetorName(config.setor)}`;
       const configToSave = {
         ...config,
         versao: (config.versao || 0) + 1,
@@ -88,12 +100,12 @@ export function useFormConfig(setor?: string) {
   const resetFormConfig = useCallback((setorName: string) => {
     try {
       setError(null);
-      const storageKey = `${STORAGE_KEY_PREFIX}${setorName.toLowerCase().replace(/\s+/g, '_')}`;
+      const storageKey = `${STORAGE_KEY_PREFIX}${normalizeSetorName(setorName)}`;
       localStorage.removeItem(storageKey);
       
       // Retorna para config padrão
       const defaultConfig: FormConfig = {
-        id: `setor_${setorName.toLowerCase().replace(/\s+/g, '_')}`,
+        id: `setor_${normalizeSetorName(setorName)}`,
         setor: setorName,
         tiposChamado: DEFAULT_TIPOS_CHAMADO,
         camposCustomizados: [],

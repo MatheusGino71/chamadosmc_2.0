@@ -546,6 +546,14 @@ export default function AdminPage() {
                 <span className="hidden md:inline">Novo Chamado</span>
               </button>
               <button
+                onClick={() => router.push('/dashboard/chamado-do-setor')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                aria-label="Criar novo chamado do setor"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:inline">Novo Chamado do Setor</span>
+              </button>
+              <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition focus:outline-none focus:ring-2 focus:ring-primary-500"
                 aria-label="Sair da conta"

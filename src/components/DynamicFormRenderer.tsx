@@ -22,7 +22,7 @@ export default function DynamicFormRenderer({
     onDataChange?.(newDados);
   };
 
-  if (!formConfig.camposCustomizados || formConfig.camposCustomizados.length === 0) {
+  if (!formConfig || !formConfig.camposCustomizados || formConfig.camposCustomizados.length === 0) {
     return null;
   }
 
