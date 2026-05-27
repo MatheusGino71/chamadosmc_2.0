@@ -1,0 +1,57 @@
+📇 CRIAR ÍNDICES DO FIRESTORE (Manual - 2 minutos)
+==================================================
+
+Os seguintes índices precisam ser criados:
+
+1. Coleção: notifications
+   - Campo 1: recipientId (ASCENDING)
+   - Campo 2: createdAt (DESCENDING)
+
+2. Coleção: adminMessages  
+   - Campo 1: recipientId (ASCENDING)
+   - Campo 2: createdAt (DESCENDING)
+
+3. Coleção: adminMessages
+   - Campo 1: senderId (ASCENDING)
+   - Campo 2: createdAt (DESCENDING)
+
+4. Coleção: adminMessages
+   - Campo 1: conversationId (ASCENDING)
+   - Campo 2: createdAt (ASCENDING)
+
+5. Coleção: tickets
+   - Campo 1: userId (ASCENDING)
+   - Campo 2: createdAt (DESCENDING)
+
+6. Coleção: tickets
+   - Campo 1: status (ASCENDING)
+   - Campo 2: createdAt (DESCENDING)
+
+7. Coleção: tickets
+   - Campo 1: status (ASCENDING)
+   - Campo 2: archived (ASCENDING)
+
+════════════════════════════════════════════════════
+
+PASSO A PASSO:
+
+1. Acesse: https://console.firebase.google.com/project/chamadosmcnew/firestore/indexes
+
+2. Clique em "Criar índice" para cada um dos índices acima
+
+3. Preencha os dados conforme mostrado acima
+
+4. Clique em "Criar"
+
+5. Aguarde a criação (geralmente 5-10 minutos)
+
+Você saberá que está pronto quando as barra de progresso mostrar "Ativo"
+
+════════════════════════════════════════════════════
+
+Alternativamente, o arquivo firestore.indexes.json já está pronto.
+Se preferir deploy automático depois, use:
+
+firebase use chamadosmcnew
+firebase login  
+firebase deploy --only firestore:indexes

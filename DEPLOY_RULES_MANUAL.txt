@@ -1,0 +1,48 @@
+🔐 FIRESTORE RULES PARA DEPLOY MANUAL
+=====================================
+
+PASSO A PASSO:
+1. Acesse: https://console.firebase.google.com/project/chamadosmcnew/firestore/rules
+2. Autentique com sua conta Google
+3. Clique em "Editar Rules" (botão azul no topo)
+4. LIMPE TUDO que está lá
+5. COPIE E COLE O CÓDIGO ABAIXO:
+
+────────────────────────────────────────────────────
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Qualquer coleção e subcoleção (fallback)
+    match /{document=**} {
+      // Usuários autenticados podem ler tudo
+      allow read: if request.auth != null;
+      
+      // Usuários autenticados podem criar tudo
+      allow create: if request.auth != null;
+      
+      // Usuários autenticados podem atualizar tudo
+      allow update: if request.auth != null;
+      
+      // Usuários autenticados podem deletar tudo
+      allow delete: if request.auth != null;
+    }
+  }
+}
+
+────────────────────────────────────────────────────
+
+6. Clique em "Publicar" (botão azul)
+7. Aguarde a mensagem "Deployment completo" ou "Published"
+
+PRONTO! As rules foram atualizadas no Firebase.
+
+TESTE AGORA:
+- Volte ao navegador em http://localhost:3002
+- Atualize a página (F5)
+- Faça login com:
+  Email: teste@meucurso.com
+  Senha: Teste@12345
+
+Deve funcionar perfeitamente! ✅

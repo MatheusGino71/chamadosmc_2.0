@@ -1,0 +1,37 @@
+{
+  "collections": {
+    "tickets": {
+      "success": 137,
+      "errors": 0
+    },
+    "users": {
+      "success": 34,
+      "errors": 0
+    },
+    "notifications": {
+      "success": 427,
+      "errors": 0
+    },
+    "adminMessages": {
+      "success": 15,
+      "errors": 0
+    },
+    "counters": {
+      "success": 1,
+      "errors": 0
+    },
+    "formConfigs": {
+      "success": 0,
+      "errors": 0
+    }
+  },
+  "storage": {
+    "skipped": true,
+    "reason": "Bucket name not specified or invalid. Specify a valid bucket name via the storageBucket option when initializing the app, or specify the bucket name explicitly when calling the getBucket() method."
+  },
+  "auth": {
+    "success": 36,
+    "errors": 0
+  },
+  "timestamp": "2026-05-27T14:43:03.058Z"
+}

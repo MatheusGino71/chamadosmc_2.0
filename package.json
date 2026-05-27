@@ -6,14 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "backup:firebase": "node scripts/backup-firebase.js",
+    "migrate:firebase": "node scripts/migrate-firebase.js"
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@hello-pangea/dnd": "^18.0.1",
+    "axios": "^1.16.1",
     "date-fns": "^3.6.0",
     "firebase": "^11.3.0",
     "focus-trap-react": "^11.0.6",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.378.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
@@ -27,6 +31,8 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^13.10.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"

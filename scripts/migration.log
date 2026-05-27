@@ -1,0 +1,103 @@
+[2026-05-27T14:43:03.053Z] 🚀 INICIANDO MIGRAÇÃO FIREBASE 
+[2026-05-27T14:43:03.056Z] Origem: chamadosmeucurso → Destino: chamadosmcnew 
+[2026-05-27T14:43:03.057Z] ============================================================ 
+[2026-05-27T14:43:03.059Z] 
+👥 Iniciando migração de usuários de autenticação... 
+[2026-05-27T14:43:33.104Z] ✓ Usuários migrados: 36 sucesso, 0 erros 
+[2026-05-27T14:43:33.106Z] 
+📚 Iniciando migração da coleção: tickets 
+[2026-05-27T14:43:40.434Z] ✓ Sub-coleção migrada: tickets/305rZIHDNS7gr3LZTcNc/internalMessages (1 docs) 
+[2026-05-27T14:43:42.665Z] ✓ Sub-coleção migrada: tickets/3qg1jjnLrcKHk2VYjhlU/messages (1 docs) 
+[2026-05-27T14:43:46.355Z] ✓ Sub-coleção migrada: tickets/7soaguMfWYYxmo2of2rN/messages (1 docs) 
+[2026-05-27T14:43:53.722Z] ✓ Sub-coleção migrada: tickets/9VL08fWVOnt6XorAnzLO/messages (1 docs) 
+[2026-05-27T14:43:55.672Z] ✓ Sub-coleção migrada: tickets/9eSCePrEwR6yPS2FZUSm/messages (1 docs) 
+[2026-05-27T14:43:58.844Z] ✓ Sub-coleção migrada: tickets/CCXjmixPKYNrUm7PbAHA/internalMessages (1 docs) 
+[2026-05-27T14:44:11.032Z] ✓ Sub-coleção migrada: tickets/HndxVS6BakmaNDaMrq2F/internalMessages (1 docs) 
+[2026-05-27T14:44:12.426Z] ✓ Sub-coleção migrada: tickets/HndxVS6BakmaNDaMrq2F/messages (3 docs) 
+[2026-05-27T14:44:15.537Z] ✓ Sub-coleção migrada: tickets/JtjlD0oyjfVGecI1jYub/messages (1 docs) 
+[2026-05-27T14:44:19.533Z] ✓ Sub-coleção migrada: tickets/LRXANJLzRRJpO6xh5KI3/messages (1 docs) 
+[2026-05-27T14:44:25.883Z] ✓ Sub-coleção migrada: tickets/OQZDi2ynlRzADNmPrsQu/messages (1 docs) 
+[2026-05-27T14:44:28.849Z] ✓ Sub-coleção migrada: tickets/Ptpn7vcd3k53XauUjZ0U/internalMessages (1 docs) 
+[2026-05-27T14:44:34.584Z] ✓ Sub-coleção migrada: tickets/TDh7Yc2HnVitLOZhLSz6/messages (3 docs) 
+[2026-05-27T14:44:36.529Z] ✓ Sub-coleção migrada: tickets/Ti9x7Mu2pcBUE96wcoRx/messages (1 docs) 
+[2026-05-27T14:44:42.673Z] ✓ Sub-coleção migrada: tickets/UqWwRyZZli9OYj96Dk8j/messages (2 docs) 
+[2026-05-27T14:44:47.955Z] ✓ Sub-coleção migrada: tickets/VO2JgXQgGDJahQYK6ITH/messages (1 docs) 
+[2026-05-27T14:44:51.582Z] ✓ Sub-coleção migrada: tickets/W21HWF5TpaNf4MVPi0Vm/messages (1 docs) 
+[2026-05-27T14:44:55.371Z] ✓ Sub-coleção migrada: tickets/X2Zp4ScCKzMfuIo0dIOw/internalMessages (1 docs) 
+[2026-05-27T14:45:01.617Z] ✓ Sub-coleção migrada: tickets/cHnUKvDseD0KWhaBEbRO/messages (1 docs) 
+[2026-05-27T14:45:03.245Z] ✓ Sub-coleção migrada: tickets/cWymYdfoG8PjaJphcR42/messages (2 docs) 
+[2026-05-27T14:45:07.961Z] ✓ Sub-coleção migrada: tickets/f3433KnVCupwe0Cv0UVe/internalMessages (1 docs) 
+[2026-05-27T14:45:09.197Z] ✓ Sub-coleção migrada: tickets/f3loyHsNYrXbFNmP7HZr/messages (3 docs) 
+[2026-05-27T14:45:10.419Z] ✓ Sub-coleção migrada: tickets/f8dvaQtyKBiQTjSxdF8W/messages (2 docs) 
+[2026-05-27T14:45:12.341Z] ✓ Sub-coleção migrada: tickets/gcJPiBPyPtIKoX2W0c9M/messages (4 docs) 
+[2026-05-27T14:45:13.203Z] ✓ Sub-coleção migrada: tickets/gxcw5IV7hfYE8furfwRX/messages (1 docs) 
+[2026-05-27T14:45:17.280Z] ✓ Sub-coleção migrada: tickets/j906mKd5O9MF6MejnRNG/messages (1 docs) 
+[2026-05-27T14:45:20.045Z] ✓ Sub-coleção migrada: tickets/kVeyK552dgLs4qCFWwHK/messages (2 docs) 
+[2026-05-27T14:45:22.400Z] ✓ Sub-coleção migrada: tickets/mkkmouQBws1FZ0ztBiEm/internalMessages (1 docs) 
+[2026-05-27T14:45:24.158Z] ✓ Sub-coleção migrada: tickets/or4SAM6hoFoVhBo37aSg/messages (1 docs) 
+[2026-05-27T14:45:27.846Z] ✓ Sub-coleção migrada: tickets/qARTVkmjaBqq4KzvdDRi/messages (1 docs) 
+[2026-05-27T14:45:29.670Z] ✓ Sub-coleção migrada: tickets/sNE6Lvr2xOWihKeDorGg/messages (3 docs) 
+[2026-05-27T14:45:33.664Z] ✓ Sub-coleção migrada: tickets/uiYDoMuENdDeF2apKY5B/messages (1 docs) 
+[2026-05-27T14:45:37.556Z] ✓ Sub-coleção migrada: tickets/zbk2w8RhjigH0ji0KdoG/internalMessages (1 docs) 
+[2026-05-27T14:45:37.557Z] ✓ Coleção tickets migrada: 137 docs sucesso, 0 erros 
+[2026-05-27T14:45:37.559Z] 
+📚 Iniciando migração da coleção: users 
+[2026-05-27T14:45:45.132Z] ✓ Coleção users migrada: 34 docs sucesso, 0 erros 
+[2026-05-27T14:45:45.133Z] 
+📚 Iniciando migração da coleção: notifications 
+[2026-05-27T14:47:18.115Z] ✓ Coleção notifications migrada: 427 docs sucesso, 0 erros 
+[2026-05-27T14:47:18.117Z] 
+📚 Iniciando migração da coleção: adminMessages 
+[2026-05-27T14:47:21.789Z] ✓ Coleção adminMessages migrada: 15 docs sucesso, 0 erros 
+[2026-05-27T14:47:21.791Z] 
+📚 Iniciando migração da coleção: counters 
+[2026-05-27T14:47:22.171Z] ✓ Coleção counters migrada: 1 docs sucesso, 0 erros 
+[2026-05-27T14:47:22.173Z] 
+📚 Iniciando migração da coleção: formConfigs 
+[2026-05-27T14:47:22.416Z] ✓ Coleção formConfigs migrada: 0 docs sucesso, 0 erros 
+[2026-05-27T14:47:22.418Z] 
+📁 Iniciando migração de arquivos do Storage... 
+[2026-05-27T14:47:22.420Z] ✗ Erro ao migrar Storage: Bucket name not specified or invalid. Specify a valid bucket name via the storageBucket option when initializing the app, or specify the bucket name explicitly when calling the getBucket() method. 
+[2026-05-27T14:47:22.422Z] ⚠️  Storage não foi migrado (pode ser esperado): Bucket name not specified or invalid. Specify a valid bucket name via the storageBucket option when initializing the app, or specify the bucket name explicitly when calling the getBucket() method. 
+[2026-05-27T14:47:22.424Z] 
+============================================================ 
+[2026-05-27T14:47:22.426Z] ✅ MIGRAÇÃO CONCLUÍDA COM SUCESSO! 
+[2026-05-27T14:47:22.427Z] 
+Resumo: 
+[2026-05-27T14:47:22.429Z] {
+  "collections": {
+    "tickets": {
+      "success": 137,
+      "errors": 0
+    },
+    "users": {
+      "success": 34,
+      "errors": 0
+    },
+    "notifications": {
+      "success": 427,
+      "errors": 0
+    },
+    "adminMessages": {
+      "success": 15,
+      "errors": 0
+    },
+    "counters": {
+      "success": 1,
+      "errors": 0
+    },
+    "formConfigs": {
+      "success": 0,
+      "errors": 0
+    }
+  },
+  "storage": {
+    "skipped": true,
+    "reason": "Bucket name not specified or invalid. Specify a valid bucket name via the storageBucket option when initializing the app, or specify the bucket name explicitly when calling the getBucket() method."
+  },
+  "auth": {
+    "success": 36,
+    "errors": 0
+  },
+  "timestamp": "2026-05-27T14:43:03.058Z"
+} 
